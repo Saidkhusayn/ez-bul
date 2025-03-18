@@ -6,15 +6,15 @@ import { useUI } from "../contexts/UIContext";
 
 const Sidebar: React.FC = () => {
   const { showContacts, chat } = useUI();
-  const [isOpen, setIsOpen] = useState(false); 
-
+  const [isOpen, setIsOpen] = useState(true);
+  
   return (
     <div className={`sidebar-container ${isOpen ? "open" : ""}`}>
       {/* Toggle button */}
       <button className="sidebar-toggle" onClick={() => setIsOpen(!isOpen)}>
-        {isOpen ? "Close" : "Chat"} 
+        {isOpen ? "Close" : "Chat"}
       </button>
-
+      
       {/* Sidebar Content */}
       <div className="sidebar-content">
         {showContacts ? (
@@ -22,7 +22,10 @@ const Sidebar: React.FC = () => {
         ) : chat.isVisible && chat.selectedReceiver ? (
           <Chat receiverId={chat.selectedReceiver} />
         ) : (
-          <p>Select a chat to start messaging</p>
+          <div className="no-chat-selected">
+            <div className="empty-state-icon">💬</div>
+            <p>Select a chat to start messaging</p>
+          </div>
         )}
       </div>
     </div>

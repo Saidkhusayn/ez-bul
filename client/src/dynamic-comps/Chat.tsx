@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext"; 
 import { io } from "socket.io-client";
@@ -17,24 +17,44 @@ const socket = io("http://localhost:3000", {
 const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const { closeChat } = useUI();
   const { userId } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null); // For auto-scrolling
   
-  const [messages, setMessages] = useState<{ text: string; isSender: boolean }[]>([]); // State for messages
-  const [loading, setLoading] = useState<boolean>(true); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+  const [messages, setMessages] = useState<{ text: string; isSender: boolean }[]>([]); 
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [receiverName, setReceiverName] = useState("User"); // Default name until fetched
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
-    socket.emit("join", userId); // Notify server of current user
+    socket.emit("join", userId); 
 
     socket.on("receiveMessage", (message) => {
       setMessages((prev) => [...prev, { text: message.text, isSender: false }]);
     });
 
     return () => {
-      socket.off("receiveMessage"); // Cleanup listener
+      socket.off("receiveMessage");
     };
-    
-}, [userId]);
+  }, [userId]);
 
+  // Fetch receiver's username - comment this out if you'll handle this elsewhere
+  /* 
+  useEffect(() => {
+    const fetchReceiverName = async () => {
+      try {
+        const userData = await fetchWithAuth(`/users/${receiverId}`);
+        setReceiverName(userData.username || "User");
+      } catch (error) {
+        console.error("Error fetching receiver info:", error);
+      }
+    };
+    fetchReceiverName();
+  }, [receiverId]);
+  */
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,29 +63,24 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     const messageText = formData.get("message") as string;
 
     if (messageText.trim()) {
-      const newMessage = { text: messageText, isSender: true }; // Assuming the current user is the sender
+      const newMessage = { text: messageText, isSender: true };
       setMessages((prev) => [...prev, newMessage]);
 
-      // Emit to Socket.io
       socket.emit("sendMessage", {
         senderId: userId,
         receiverId,
         text: messageText,
       });
-
     }
     form.reset();
   };
 
   const fetchChatHistory = async () => {
-    //const token = localStorage.getItem("token");
     try {
       setLoading(true);
       setError(null);
 
       const data = await fetchWithAuth(`/chats/history?receiverId=${receiverId}`);
-
-      console.log(data);
       setMessages(data); 
 
     } catch (error) {
@@ -81,39 +96,83 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   }, [receiverId]);
 
   return (
-    <div className="chat-bar d-flex flex-column justify-content-between" style={{ height: "100%" }}>
-      {/* Top Section: Header and Messages */}
-      <div className="top-section">
-        {/* Header Section */}
-        <div className="header-section card-header d-flex justify-content-between">
-          <h5>Chat with {receiverId}</h5>
-          <button className="btn btn-close" onClick={closeChat}></button>
-        </div>
-        {/* Messages Section */}
-        <div className="messages-section chat-messages flex-grow-1">
-          {loading && <p>Loading chat history...</p>}
-          {error && <p>{error}</p>}
-          {!loading && !error && messages.length === 0 && <p>No messages yet.</p>}
-          {!loading && !error && messages.map((msg, index) => (
-            <div key={index} style={{ textAlign: msg.isSender ? "right" : "left" }}>
-              <span>{msg.text}</span>
+    <div className="chat-container">
+      {/* Chat header */}
+      <div className="chat-header-inside">
+        <div className="chat-header-info">
+          <div className="chat-avatar">
+            <div className="avatar-placeholder">
+              {receiverName.charAt(0).toUpperCase()}
             </div>
-          ))}
+          </div>
+          <h3>{receiverName}</h3>
         </div>
+        <button className="chat-close-btn" onClick={closeChat}>
+          <span>×</span>
+        </button>
       </div>
-      {/* Bottom Section: Typing Field */}
-      <div className="bottom-section type-field">
-        <form className="mb-2 d-flex" onSubmit={handleSend}>
-          <input
-            type="text"
-            name="message"
-            className="form-control form-control-sm flex-grow-1"
-            placeholder="Type..."
-            required
-          />
-          <button type="submit" className="btn btn-primary btn-sm">
-            Send
-          </button>
+      
+      {/* Messages area */}
+      <div className="chat-messages">
+        {loading && (
+          <div className="chat-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading messages...</p>
+          </div>
+        )}
+        
+        {error && (
+          <div className="chat-error">
+            <p>{error}</p>
+            <button 
+              className="retry-btn"
+              onClick={fetchChatHistory}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        
+        {!loading && !error && messages.length === 0 && (
+          <div className="no-messages">
+            <div className="empty-state-icon">📨</div>
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        )}
+        
+        {!loading && !error && messages.length > 0 && (
+          <div className="messages-container">
+            {messages.map((msg, index) => (
+              <div 
+                key={index} 
+                className={`message ${msg.isSender ? 'message-sent' : 'message-received'}`}
+              >
+                <div className="message-bubble">
+                  <p className="message-text">{msg.text}</p>
+                  {/* You can add time here later: <span className="message-time">12:34</span> */}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+      
+      {/* Message input area */}
+      <div className="chat-input">
+        <form onSubmit={handleSend}>
+          <div className="input-container">
+            <input
+              type="text"
+              name="message"
+              placeholder="Type a message..."
+              autoComplete="off"
+              required
+            />
+            <button type="submit" className="send-button">
+              Send
+            </button>
+          </div>
         </form>
       </div>
     </div>
