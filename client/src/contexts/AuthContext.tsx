@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -25,17 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedUser) {
           const userObject = JSON.parse(storedUser);
           setUserId(userObject.userId);
+          setUserName(userObject.username) 
           setIsLoggedIn(true);
-          setUserName(userObject.username) //seting the username in each reload
         }
       } catch (error) {
         console.error("Invalid token", error);
-        setUserId(null);
       }
     } else {
       logout()
-      //setUserId(null);
-      //setIsLoggedIn(false);
     }
   }, [token]); 
 
@@ -43,16 +41,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (newToken: string) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
-    setIsLoggedIn(true); // wrong here
   };
 
   // Logout function
-  const logout = () => {
-    localStorage.clear() //removeItem("token");
+  const logout = async () => {
+    localStorage.clear();  //removeItem("token");
     setIsLoggedIn(false);
     setToken(null);
     setUserId(null)
     setUserName(null);
+    await fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" });
   };
 
   return (

@@ -3,12 +3,13 @@ import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext"; 
 import { io } from "socket.io-client";
 import { fetchWithAuth } from "../api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface ChatProps {
   receiverId: string;
 }
 
-const socket = io("http://localhost:3000", {
+const socket = io(API_URL, {
   transports: ["websocket"], 
   reconnectionAttempts: 5, 
   timeout: 5000, 

@@ -57,5 +57,14 @@ const loginUser = async (req, res) => {
   }
 };
 
+const logout = (req, res) => {
+  res.clearCookie("refreshToken", { 
+    httpOnly: true,
+    sameSite: "Strict",
+    // secure: true, // Uncomment this in production if using HTTPS
+  });
+  res.status(200).json({ message: "Logged out successfully." });
+};
 
-module.exports = { registerUser, loginUser };
+
+module.exports = { registerUser, loginUser, logout };

@@ -6,7 +6,7 @@ import { useUI } from "../contexts/UIContext";
 
 const Sidebar: React.FC = () => {
   const { showContacts, chat } = useUI();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   
   return (
     <div className={`sidebar-container ${isOpen ? "open" : ""}`}>

@@ -39,7 +39,7 @@ const Header = () => {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchUsers(query);
-    }, 300); // Delay API call by 300ms deel
+    }, 300); 
 
     return () => clearTimeout(delayDebounce); // Cleanup previous timer
   }, [query]);
@@ -67,11 +67,11 @@ const Header = () => {
     <header className="site-header">
       <div className="header-container">
         <div className="logo">
-          <span className="logo-text" onClick={() => {navigate("/")}}>ez bu!</span>
-        </div>
+          <span className="logo-text">ez bu!</span>
+        </ div>
         <div className="nav-menu">
           <ul className="nav-list">
-            <li className="nav-item">Home</li>
+            <li className="nav-item" onClick={() => {navigate("/")}}>Home</li>
             <li className="nav-item">Platform</li>
             <li className="nav-item">Resources</li>
           </ul>
@@ -114,7 +114,7 @@ const Header = () => {
                         navigate(`profile/${user.username}`);
                       }}
                     >
-                      {user.name} @{user.username}
+                      {user.username}
                     </li>
                   ))}
                 </ul>

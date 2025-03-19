@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import FormField from "../sub-components/FormField";
-import { useAuth } from "../contexts/AuthContext";
+//import { useAuth } from "../contexts/AuthContext";
 import languages from "../assets/languages.json";
 import { fetchWithAuth } from "../api";
 const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
@@ -26,7 +26,7 @@ const typeOptions: Option[] = [
 ];
 
 const ProfileEdit: React.FC = () => {
-  const {userName} = useAuth();
+  //const {userName} = useAuth();
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -79,15 +79,15 @@ const ProfileEdit: React.FC = () => {
 
   // Fetch the user profile when username is available
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if(!token){
-        console.log("You don't have token and you go to public view");
-        return;
-    }
+    //const token = localStorage.getItem("token");
+    //if(!token){
+    //  console.log("You don't have token and you go to public view");
+    //  return;
+    //}
 
     const getUser = async () => {
       try {
-        const data = await fetchWithAuth(`/profile/${userName}`);
+        const data = await fetchWithAuth(`/profile/me`);
         setProfile(data.user);
 
       } catch (error) {
@@ -95,10 +95,10 @@ const ProfileEdit: React.FC = () => {
       }
     };
 
-    if (userName) {
+    //if (userName) {
       getUser();
-    }
-  }, [userName]);
+   // }
+  }, []);
 
   // Fetch countries from Geonames when component mounts
   useEffect(() => {

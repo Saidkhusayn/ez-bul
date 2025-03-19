@@ -39,7 +39,7 @@ const Profile = () => {
 
     const getUser = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/profile/${username}`, {
+        const res = await fetch(`http://localhost:3000/${username}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

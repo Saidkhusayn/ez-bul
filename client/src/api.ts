@@ -5,6 +5,12 @@ interface FetchOptions extends RequestInit {
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const fetchWithAuth = async (url: string, options: FetchOptions = {}): Promise<any> => {
+  const storedToken = localStorage.getItem("token");
+  if (!storedToken) {
+    window.location.href = '/login'; // work on that
+    throw new Error("No access token found. Please log in.");
+  }
+
   const isFormData = options.body instanceof FormData;
 
   // Build headers differently based on the body type

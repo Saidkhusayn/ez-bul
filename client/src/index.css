@@ -13,7 +13,7 @@
 .header-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20 0px;
+  padding: 0 25px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -46,6 +46,7 @@
 .nav-item {
   margin-right: 30px;
   font-weight: 500;
+  font-size: 15px;
   cursor: pointer;
   color: #222;
   position: relative;

@@ -20,5 +20,15 @@ const searchUsers = async(req, res) => {
     }
 };
 
+const viewUser = async (req, res) => {
+    try {
+        const username = req.params.username; 
+        const user = await UserModel.findOne({ username }).select("_id username name profilePicture bio type country province languages"); 
+        res.json({ user });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to get user object", details: err.message });
+    }
+  };
 
-module.exports = { searchUsers }
+
+module.exports = { searchUsers, viewUser }
