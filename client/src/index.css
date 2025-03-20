@@ -696,6 +696,261 @@
 
 
 
+/* Modal Overlay - Reusing existing class */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  /*backdrop-filter: blur(5px);*/
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Login Modal */
+.login-modal {
+  background: rgb(255, 255, 255);
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  color: #1c1c1c;
+}
+
+/* Login Header */
+.login-header {
+  position: relative;
+  padding: 16px 24px;
+  text-align: center;
+  border-bottom: 1px solid #edeff1;
+}
+
+.login-header h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0;
+  color: #1c1c1c;
+}
+
+.close-button {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Terms Text */
+.login-terms {
+  padding: 16px 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #7c7c7c;
+  line-height: 1.5;
+}
+
+.terms-link {
+  color: #0079d3;
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+/* Login Options */
+.login-options {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.social-login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 40px;
+  border: 1px solid #edeff1;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.social-login-button:hover {
+  background-color: #f8f8f8;
+}
+
+.social-login-button .icon {
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* Login Divider */
+.login-divider {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  margin: 8px 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #edeff1;
+}
+
+.login-divider span {
+  padding: 0 10px;
+  color: #7c7c7c;
+  font-size: 14px;
+}
+
+/* Form */
+.login-form {
+  padding: 16px 24px 24px;
+}
+
+.login-error {
+  padding: 10px;
+  margin-bottom: 16px;
+  color: #ea0027;
+  background-color: #ffebe9;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #edeff1;
+  border-radius: 4px;
+  background-color: #f6f7f8;
+  font-size: 14px;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #0079d3;
+  background-color: white;
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: #7c7c7c;
+}
+
+/* Login Links */
+.login-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.forgot-password {
+  color: #0079d3;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+.signup-prompt, .login-prompt {
+  color: #7c7c7c;
+}
+
+.signup-link, .login-link {
+  color: #0079d3;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 5px;
+}
+
+.signup-link:hover, .login-link:hover {
+  text-decoration: underline;
+}
+
+/* Login Button */
+.login-button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 40px;
+  border: none;
+  background-color: #0079d3;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.login-button:hover {
+  background-color: #006cbd;
+}
+
+.login-button:focus {
+  outline: none;
+}
+
+/* Add this to your CSS file */
+.redirect-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+  
+  .redirect-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1c1c1c;
+  }
+  
+  .redirect-message {
+    font-size: 1.1rem;
+    color: #1c1c1c;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+  
+  .redirect-fallback {
+    font-size: 1rem;
+    color: #1c1c1c;
+  }
+  
+  .redirect-fallback a {
+    color: #0079d3;
+    text-decoration: none;
+  }
+  
+  .redirect-fallback a:hover {
+    text-decoration: underline;
+  }
 
 
 
@@ -729,29 +984,6 @@ main {
   align-items: center;
   justify-content: center;
   margin-left: 10px;
-}
-
-/* Modal Overlay */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.login-modal {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  width: 300px;
 }
 
 /* Profile */
