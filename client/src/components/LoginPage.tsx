@@ -12,7 +12,7 @@ const LoginPage = () => {
     if (isLoggedIn && redirectPending) {
       const timer = setTimeout(() => {
         navigate("/");
-      }, 4000); // 4 seconds
+      }, 5000); // 4 seconds
       
       return () => clearTimeout(timer);
     }
