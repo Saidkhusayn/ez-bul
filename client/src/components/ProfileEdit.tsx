@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import FormField from "../sub-components/FormField";
-//import { useAuth } from "../contexts/AuthContext";
 import languages from "../assets/languages.json";
 import { fetchWithAuth } from "../api";
 const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
@@ -8,6 +7,32 @@ const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
 interface Option {
   value: string;
   label: string;
+}
+
+interface LocationOption {
+  value: string;
+  label: string;
+}
+
+interface LanguageOption {
+  value: string;
+  label: string;
+}
+
+interface ProfileData {
+  name: string;
+  email: string;
+  username: string;
+  country: LocationOption | null;
+  province: LocationOption | null;
+  city: LocationOption | null;
+  profilePicture: string;
+  birthday: string;
+  open: string;
+  type: string;
+  rate: string;
+  languages: LanguageOption[];
+  bio: string;
 }
 
 const languageOptions = languages.map((lang) => ({
@@ -26,20 +51,19 @@ const typeOptions: Option[] = [
 ];
 
 const ProfileEdit: React.FC = () => {
-  //const {userName} = useAuth();
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileData>({
     name: "",
     email: "",
     username: "",
-    country: "",
-    province: "",
-    city: "",
+    country: null,
+    province: null,
+    city: null,
     profilePicture: "",
     birthday: "",
     open: "",
     type: "",
     rate: "",
-    languages: [] as string[],
+    languages: [],
     bio: "",
   });
 
@@ -47,58 +71,173 @@ const ProfileEdit: React.FC = () => {
   const [countryOptions, setCountryOptions] = useState<Option[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [cityOptions, setCityOptions] = useState<Option[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null);
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  //@ts-ignore
+  const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleFieldChange = (field: string, newValue: any) => {
     setProfile((prev) => ({ ...prev, [field]: newValue }));
     setDirtyFields((prev) => ({ ...prev, [field]: true }));
-    console.log(dirtyFields)
+    
+    // Reset save status when making changes
+    if (saveStatus) {
+      setSaveStatus(null);
+      // Also clear any existing timeout
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+        alertTimeoutRef.current = null;
+      }
+    }
   };
 
-  
+  // Reset dependent fields when parent field changes
+  const resetProvinceAndCity = () => {
+    setProfile(prev => ({
+      ...prev,
+      province: null,
+      city: null
+    }));
+    setDirtyFields(prev => ({
+      ...prev,
+      province: true,
+      city: true
+    }));
+    setProvinceOptions([]);
+    setCityOptions([]);
+  };
+
+  const resetCity = () => {
+    setProfile(prev => ({
+      ...prev,
+      city: null
+    }));
+    setDirtyFields(prev => ({
+      ...prev,
+      city: true
+    }));
+    setCityOptions([]);
+  };
+
+  // Reset type and rate when "open" changes
+  const resetTypeAndRate = () => {
+    if (profile.open !== "Yes") {
+      setProfile(prev => ({
+        ...prev,
+        type: "",
+        rate: ""
+      }));
+      setDirtyFields(prev => ({
+        ...prev,
+        type: true,
+        rate: true
+      }));
+    }
+  };
+
+  // Reset rate when type changes
+  const resetRate = () => {
+    if (profile.type !== "Paid") {
+      setProfile(prev => ({
+        ...prev,
+        rate: ""
+      }));
+      setDirtyFields(prev => ({
+        ...prev,
+        rate: true
+      }));
+    }
+  };
+
   // Handle profile picture file change
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type and size
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (!validTypes.includes(file.type)) {
+        alert("Please upload a valid image file (JPEG, PNG, or GIF)");
+        return;
+      }
+
+      if (file.size > maxSize) {
+        alert("File size exceeds 5MB limit");
+        return;
+      }
+
       const formData = new FormData();
       formData.append("profilePicture", file);
 
       try {
+        setSaveStatus({ success: false, message: "Uploading profile picture..." });
         const data = await fetchWithAuth("/profile/upload", {
           method: "POST",
           body: formData,
         });
         console.log(data.url);
         setProfile((prev) => ({ ...prev, profilePicture: data.url }));
+        setDirtyFields((prev) => ({ ...prev, profilePicture: true }));
+        setSaveStatus({ success: true, message: "Profile picture updated successfully!" });
       } catch (err) {
         console.error("Error uploading file:", err);
+        setSaveStatus({ success: false, message: "Failed to upload profile picture. Please try again." });
       }
     }
-  }
+  };
 
   // Fetch the user profile when username is available
   useEffect(() => {
-    //const token = localStorage.getItem("token");
-    //if(!token){
-    //  console.log("You don't have token and you go to public view");
-    //  return;
-    //}
-
     const getUser = async () => {
+      setIsLoading(true);
       try {
         const data = await fetchWithAuth(`/profile/me`);
-        setProfile(data.user);
-
+        
+        // Convert string values to object format if needed
+        const processedData = {
+          ...data.user,
+          // Convert country string to object format if it's a string
+          country: typeof data.user.country === 'string' ? 
+            { value: data.user.country, label: findLabelForValue(data.user.country, countryOptions) } : 
+            data.user.country,
+          // Convert province string to object format if it's a string
+          province: typeof data.user.province === 'string' ? 
+            { value: data.user.province, label: findLabelForValue(data.user.province, provinceOptions) } : 
+            data.user.province,
+          // Convert city string to object format if it's a string
+          city: typeof data.user.city === 'string' ? 
+            { value: data.user.city, label: data.user.city } : 
+            data.user.city,
+          // Convert languages array of strings to array of objects if needed
+          languages: Array.isArray(data.user.languages) ? 
+            data.user.languages.map((lang: string | LanguageOption) => 
+              typeof lang === 'string' ? 
+                { value: lang, label: findLabelForValue(lang, languageOptions) } : 
+                lang
+            ) : 
+            [],
+        };
+        
+        setProfile(processedData);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching profile:", error);
+        setIsLoading(false);
+        setSaveStatus({ success: false, message: "Failed to load profile data." });
       }
     };
 
-    //if (userName) {
-      getUser();
-   // }
+    getUser();
   }, []);
+
+  // Helper function to find label for a value
+  const findLabelForValue = (value: string, options: Option[]): string => {
+    const option = options.find(opt => opt.value === value);
+    return option ? option.label : value;
+  };
 
   // Fetch countries from Geonames when component mounts
   useEffect(() => {
@@ -107,9 +246,8 @@ const ProfileEdit: React.FC = () => {
         const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
         if (res.ok) {
           const data = await res.json();
-          //console.log("Fetched data:", data);
           const options: Option[] = data.geonames.map((country: any) => ({
-            value: country.geonameId.toString(), // use geonameId as a string
+            value: country.geonameId.toString(),
             label: country.countryName,
           }));
           options.sort((a, b) => a.label.localeCompare(b.label));
@@ -117,6 +255,7 @@ const ProfileEdit: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching countries:", error);
+        setSaveStatus({ success: false, message: "Failed to load country data." });
       }
     };
 
@@ -129,24 +268,28 @@ const ProfileEdit: React.FC = () => {
       setProvinceOptions([]);
       return;
     }
+    
     const fetchProvinces = async () => {
       try {
-        const res = await fetch(
-         `http://api.geonames.org/childrenJSON?geonameId=${profile.country}&username=${GEONAMES_ID}` //make it hidden
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const options: Option[] = data.geonames.map((prov: any) => ({
-            value: prov.geonameId.toString(),
-            label: prov.adminName1,
-          }));
-
-          // Remove duplicates if any (GeoNames might return redundant names)
-          const uniqueOptions = Array.from(
-            new Map(options.map((opt) => [opt.value, opt])).values()
+        if(profile.country?.value){
+          const countryValue = profile.country.value;
+          const res = await fetch(
+           `http://api.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
           );
-          uniqueOptions.sort((a, b) => a.label.localeCompare(b.label));
-          setProvinceOptions(uniqueOptions);
+          if (res.ok) {
+            const data = await res.json();
+            const options: Option[] = data.geonames.map((prov: any) => ({
+              value: prov.geonameId.toString(),
+              label: prov.adminName1,
+            }));
+  
+            // Remove duplicates if any (GeoNames might return redundant names)
+            const uniqueOptions = Array.from(
+              new Map(options.map((opt) => [opt.value, opt])).values()
+            );
+            uniqueOptions.sort((a, b) => a.label.localeCompare(b.label));
+            setProvinceOptions(uniqueOptions);
+          }
         }
       } catch (error) {
         console.error("Error fetching provinces:", error);
@@ -154,7 +297,6 @@ const ProfileEdit: React.FC = () => {
     };
 
     fetchProvinces();
-    //console.log(profile.country)
   }, [profile.country]);
 
   // Fetch cities based on selected country and province using GeoNames
@@ -163,25 +305,29 @@ const ProfileEdit: React.FC = () => {
       setCityOptions([]);
       return;
     }
+    
     const fetchCities = async () => {
       try {
-        const res = await fetch(
-          `http://api.geonames.org/childrenJSON?geonameId=${profile.province}&username=${GEONAMES_ID}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const options: Option[] = data.geonames.map((city: any) => ({
-            value: city.name,
-            label: city.name,
-          }));
-
-          // Remove duplicates if needed
-          const uniqueOptions = Array.from(
-            new Map(options.map((opt) => [opt.value, opt])).values()
+        if(profile.province?.value){
+          const provinceValue = profile.province.value;
+          const res = await fetch(
+            `http://api.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
           );
-          uniqueOptions.sort((a, b) => a.label.localeCompare(b.label));
-          setCityOptions(uniqueOptions);
-        }
+          if (res.ok) {
+            const data = await res.json();
+            const options: Option[] = data.geonames.map((city: any) => ({
+              value: city.geonameId.toString(),
+              label: city.name,
+            }));
+
+            // Remove duplicates if needed
+            const uniqueOptions = Array.from(
+              new Map(options.map((opt) => [opt.value, opt])).values()
+            );
+            uniqueOptions.sort((a, b) => a.label.localeCompare(b.label));
+            setCityOptions(uniqueOptions);
+          }
+      }
       } catch (error) {
         console.error("Error fetching cities:", error);
       }
@@ -190,19 +336,19 @@ const ProfileEdit: React.FC = () => {
     fetchCities();
   }, [profile.country, profile.province]);
 
-  
-
   // Save profile: Only send the dirty fields to the server
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const payload: any = {};
     for (const key in dirtyFields) {
-      if (key.includes(".")) {
-        const [parent] = key.split(".");
-        if (!payload[parent]) payload[parent] = {};
-      } else {
-        payload[key] = profile[key as keyof typeof profile];
+      if (dirtyFields[key]) {
+        if (key.includes(".")) {
+          const [parent] = key.split(".");
+          if (!payload[parent]) payload[parent] = {};
+        } else {
+          payload[key] = profile[key as keyof typeof profile];
+        }
       }
     }
 
@@ -210,49 +356,77 @@ const ProfileEdit: React.FC = () => {
 
     const token = localStorage.getItem("token");
     if(!token){
-        console.log("You don't have token and you go to public view"); //do some stuff to prevent it in the server
+        console.log("You don't have token and you go to public view");
+        setSaveStatus({ success: false, message: "Authentication failed. Please log in again." });
         return;
     }
+    
     if(Object.keys(payload).length > 0){
       try {
+        setSaveStatus({ success: false, message: "Saving profile changes..." });
+        
         const data = await fetchWithAuth(`/profile/edit`, {
           method: "PUT",
           body: JSON.stringify(payload),
         });
 
         console.log("Updated Profile:", data);
-        console.log(payload);
-        setDirtyFields({})
+        setDirtyFields({});
+        setSaveStatus({ success: true, message: "Profile updated successfully!" });
 
+        if (alertTimeoutRef.current) {
+          clearTimeout(alertTimeoutRef.current);
+        }
+        
+        // Auto-dismiss success message after 3 seconds
+        alertTimeoutRef.current = setTimeout(() => {
+          setSaveStatus(null);
+          alertTimeoutRef.current = null;
+        }, 3000);
       } catch (error) {
         console.error("Error saving profile:", error);
+        setSaveStatus({ success: false, message: "Failed to save profile changes. Please try again." });
       }
     } else{
-      console.log("You didn't make any changes")
+      console.log("You didn't make any changes");
+      setSaveStatus({ success: false, message: "No changes to save." });
     }
   };
     
-
   const handlePictureClick = () => {
-    // @ts-ignore
-    fileInputRef.current.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
-  if (!profile || profile.username === "") {
-    return <div>Loading profile...</div>;
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <span className="ms-2">Loading profile...</span>
+      </div>
+    );
   }
 
   return (
     <div className="profile-page">
       {/* Header Section */}
       <div className="profile-header text-center text-white">
-        <div className="profile-picture-container">
+        <div className="profile-picture-container position-relative">
           <img
-            src={profile.profilePicture}
+            src={profile.profilePicture || "https://via.placeholder.com/150"}
             alt="Profile"
-            className="profile-picture"
+            className="profile-picture rounded-circle border"
+            style={{ width: "120px", height: "120px", objectFit: "cover", cursor: "pointer" }}
             onClick={handlePictureClick}
           />
+          <div className="position-absolute bottom-0 end-0">
+            <span className="badge bg-primary rounded-circle p-2" style={{ cursor: "pointer" }} onClick={handlePictureClick}>
+              <i className="bi bi-camera"></i>
+            </span>
+          </div>
           <input 
             type="file" 
             style={{ display: "none" }}
@@ -261,104 +435,149 @@ const ProfileEdit: React.FC = () => {
             onChange={handleFileChange}
           />
         </div>
-        <h2 className="mt-3">{profile.name}</h2>
-        <p className="text">Username: {profile.username}</p>
-        <p className="text">Type: {profile.type}</p>
+        <h2 className="mt-3">{profile.name || "Your Name"}</h2>
+        <p className="text">@{profile.username}</p>
+        <p className="text">Type: {profile.type || "Not set"}</p>
       </div>
+
+      {/* Save Status Alert */}
+      {saveStatus && (
+        <div className={`alert ${saveStatus.success ? 'alert-success' : 'alert-warning'} alert-dismissible fade show mx-auto my-3`}>
+          {saveStatus.message}
+          <button type="button" className="btn-close" onClick={() => {
+            setSaveStatus(null);
+            if (alertTimeoutRef.current) {
+              clearTimeout(alertTimeoutRef.current);
+              alertTimeoutRef.current = null;
+            }
+          }}></button>
+        </div>
+      )}
 
       {/* Profile Form */}
       <div className="container mt-4">
         <div className="card p-4 shadow-lg">
           <h5 className="mb-3">Basic Info</h5>
           <form onSubmit={handleSaveProfile} className="d-flex flex-column">
-            <>
-              <FormField
-                label="Name"
-                type="text"
-                value={profile.name}
-                onChange={(val) => handleFieldChange("name", val)}
-              />
-              <FormField
-                label="Email"
-                type="text"
-                value={profile.email}
-                onChange={(val) => handleFieldChange("email", val)}
-              />
-              <FormField
-                label="Birthday"
-                type="date"
-                value={profile.birthday}
-                onChange={(val) => handleFieldChange("birthday", val)}
-              />
+            <FormField
+              label="Name"
+              type="text"
+              value={profile.name}
+              onChange={(val) => handleFieldChange("name", val)}
+              required
+              minLength={2}
+              maxLength={50}
+            />
+            
+            <FormField
+              label="Email"
+              type="email"
+              value={profile.email}
+              onChange={(val) => handleFieldChange("email", val)}
+              required
+            />
+            
+            <FormField
+              label="Username"
+              type="text"
+              value={profile.username}
+              onChange={(val) => handleFieldChange("username", val)}
+              required
+              minLength={3}
+              maxLength={30}
+            />
+            
+            <FormField
+              label="Birthday"
+              type="date"
+              value={profile.birthday}
+              onChange={(val) => handleFieldChange("birthday", val)}
+            />
 
+            <FormField
+              label="Country"
+              type="select"
+              options={countryOptions}
+              value={profile.country}
+              onChange={(val) => handleFieldChange("country", val)}
+              resetDependentFields={resetProvinceAndCity}
+            />
+
+            {profile.country && (
               <FormField
-                label="Country"
+                label="Province/State"
                 type="select"
-                options={countryOptions}
-                value={profile.country}
-                onChange={(val) => handleFieldChange("country", val)}
+                options={provinceOptions}
+                value={profile.province}
+                onChange={(val) => handleFieldChange("province", val)}
+                resetDependentFields={resetCity}
               />
+            )}
 
-              {profile.country && ( //look provinceOptions.length > 0 &&
-                <FormField
-                  label="Province/State"
-                  type="select"
-                  options={provinceOptions}
-                  value={profile.province}
-                  onChange={(val) => handleFieldChange("province", val)}
-                />
-              )}
-
-              {profile.province && cityOptions.length > 0 && (
-                <FormField
-                  label="City"
-                  type="select"
-                  options={cityOptions}
-                  value={profile.city}
-                  onChange={(val) => handleFieldChange("city", val)}
-                />
-              )}
-
+            {profile.province && cityOptions.length > 0 && (
               <FormField
-                label="Bio"
-                type="text"
-                value={profile.bio}
-                onChange={(val) => handleFieldChange("bio", val)}
-              />
-
-              <FormField
-                label="Are you open"
+                label="City"
                 type="select"
-                options={openOptions}
-                value={profile.open}
-                onChange={(val) => handleFieldChange("open", val)}
+                options={cityOptions}
+                value={profile.city}
+                onChange={(val) => handleFieldChange("city", val)}
               />
-              {profile.open === "Yes" && (
-                <FormField
-                  label="Type"
-                  type="select"
-                  options={typeOptions}
-                  value={profile.type}
-                  onChange={(val) => handleFieldChange("type", val)}
-                />
-              )}
-              {profile.open === "Yes" && profile.type === "Paid" && (
-                <FormField
-                  label="Hourly Rate $"
-                  type="number"
-                  value={profile.rate}
-                  onChange={(val) => handleFieldChange("rate", val)}
-                />
-              )}
+            )}
 
+            <FormField
+              label="Bio"
+              type="text"
+              value={profile.bio}
+              onChange={(val) => handleFieldChange("bio", val)}
+              maxLength={500}
+            />
+
+            <FormField
+              label="Are you open"
+              type="select"
+              options={openOptions}
+              value={profile.open}
+              onChange={(val) => {
+                handleFieldChange("open", val);
+                resetTypeAndRate();
+              }}
+              returnRawValue={true} 
+            />
+            
+            {profile.open === "Yes" && (
               <FormField
-                label="Languages"
-                type="multiselect"
-                options={languageOptions}
-                value={profile.languages}
-                onChange={(val) => handleFieldChange("languages", val)}
+                label="Type"
+                type="select"
+                options={typeOptions}
+                value={profile.type}
+                onChange={(val) => {
+                  handleFieldChange("type", val);
+                  resetRate();
+                }}
+                required={profile.open === "Yes"}
+                returnRawValue={true} 
               />
-            </>
+            )}
+            
+            {profile.open === "Yes" && profile.type === "Paid" && (
+              <FormField
+                label="Hourly Rate $"
+                type="number"
+                value={profile.rate}
+                onChange={(val) => handleFieldChange("rate", val)}
+                min={1}
+                required={profile.open === "Yes" && profile.type === "Paid"}
+              />
+            )}
+
+            <FormField
+              label="Languages"
+              type="multiselect"
+              options={languageOptions}
+              value={profile.languages}
+              onChange={(selectedLanguages) => handleFieldChange("languages", selectedLanguages)}
+            />
+
             <div className="d-flex justify-content-center mt-3">
               <button 
                 type="submit" 
@@ -376,5 +595,3 @@ const ProfileEdit: React.FC = () => {
 };
 
 export default ProfileEdit;
-
-

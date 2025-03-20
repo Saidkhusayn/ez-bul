@@ -4,6 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { useUI } from "../contexts/UIContext";
 import Sidebar from "./Sidebar";
 
+//type LanguageEntry = { value: string, label: string };
+
 const Profile = () => {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
@@ -15,15 +17,15 @@ const Profile = () => {
     name: "",
     email: "",
     username: "",
-    country: "",
-    province: "",
-    city: "",
+    country: { value: "", label: "" },
+    province: { value: "", label: "" },
+    city: { value: "", label: "" },
     profilePicture: "",
     birthday: "",
     open: "",
     type: "",
     rate: "",
-    languages: [] as string[],
+    languages: [] as { value: string, label: string }[],
     bio: "",
   });
 
@@ -44,7 +46,34 @@ const Profile = () => {
         });
         if (res.ok) {
           const data = await res.json();
-          setProfile(data.user);
+          
+          // Process data to handle both object and string formats
+          const processedUser = {
+            ...data.user,
+            // Ensure country is an object
+            country: typeof data.user.country === 'string' 
+              ? { value: data.user.country, label: data.user.country } 
+              : data.user.country || { value: "", label: "" },
+            // Ensure province is an object
+            province: typeof data.user.province === 'string'
+              ? { value: data.user.province, label: data.user.province }
+              : data.user.province || { value: "", label: "" },
+            // Ensure city is an object
+            city: typeof data.user.city === 'string'
+              ? { value: data.user.city, label: data.user.city }
+              : data.user.city || { value: "", label: "" },
+            // Ensure languages is an array of objects
+            languages: Array.isArray(data.user.languages)
+                                  //@ts-ignore
+              ? data.user.languages.map(lang => 
+                  typeof lang === 'string' 
+                    ? { value: lang, label: lang } 
+                    : lang 
+                )
+              : []
+          };
+          
+          setProfile(processedUser);
         } else {
           console.error("Fetch failed");
         }
@@ -63,13 +92,29 @@ const Profile = () => {
       navigate("/profile/edit");
     } else {
       setIsSidebarOpen(true); // Open Sidebar
-      displayChat(profile._id)
+      displayChat(profile._id);
     }
   };
 
   if (!profile || profile.username === "") {
     return <div>Loading profile...</div>;
   }
+
+  // Function to get location string
+  const getLocationString = () => {
+    const cityLabel = profile.city?.label || "";
+    const provinceLabel = profile.province?.label || "";
+    const countryLabel = profile.country?.label || "";
+    
+    const parts = [cityLabel, provinceLabel, countryLabel].filter(part => part);
+    return parts.length > 0 ? parts.join(", ") : "Not set";
+  };
+
+  // Function to get languages string
+  const getLanguagesString = () => {
+    if (!profile.languages || profile.languages.length === 0) return "Not specified";
+    return profile.languages.map(lang => lang.label).join(", ");
+  };
 
   return (
     <>
@@ -95,12 +140,10 @@ const Profile = () => {
             <strong>Type:</strong> {profile.type || "Not specified"}
           </p>
           <p>
-            <strong>Location:</strong>{" "}
-            {profile.city || profile.province || profile.country || "Not set"}
+            <strong>Location:</strong> {getLocationString()}
           </p>
           <p>
-            <strong>Languages:</strong>{" "}
-            {profile.languages ? profile.languages.join(", ") : "Not specified"}
+            <strong>Languages:</strong> {getLanguagesString()}
           </p>
         </div>
 

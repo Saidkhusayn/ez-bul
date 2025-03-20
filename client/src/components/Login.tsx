@@ -69,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ isStandalone = false, onLoginSuccess }) =
     }
   };
 
-    // Show success message if login successful on standalone page
+    // Show success message if login successful on standalone page btn
   if (isStandalone && successRedirect) {
     return (
       <div className="modal-overlay">

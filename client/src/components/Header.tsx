@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useUI } from "../contexts/UIContext";
 import { useNavigate } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
+//btn
 
 const Header = () => {
   const { isLoggedIn, userName, logout } = useAuth();
@@ -111,7 +112,9 @@ const Header = () => {
                       className="result-item"
                       key={user._id}
                       onClick={() => {
+                        setQuery("");
                         navigate(`profile/${user.username}`);
+                        
                       }}
                     >
                       {user.username}
@@ -123,7 +126,7 @@ const Header = () => {
           </form>
           <div className="auth-controls">
             {!isLoggedIn ? (
-              <button className="btn-primary" onClick={() => {setShowLogin(true)}}>
+              <button className="black-btn" onClick={() => {setShowLogin(true)}}>
                 Log in
               </button>
             ) : null}
@@ -167,6 +170,7 @@ const Header = () => {
                     onClick={() => {
                       setShowProfile(false);
                       logout();
+                      navigate("/");
                     }}
                   >
                     Logout

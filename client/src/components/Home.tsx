@@ -2,7 +2,7 @@ import Sidebar from "./Sidebar";
 import Login from "./Login";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext";
-//import Header from "./Header";
+//import Header from "./Header"; 
 
 const Home = () => {
   const { showLogin } = useUI();

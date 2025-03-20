@@ -8,7 +8,7 @@ const passUserObject = async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to get user object", details: err.message });
     }
-  };
+};
 
 const uploadProfilePicture = async(req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -16,7 +16,7 @@ const uploadProfilePicture = async(req, res) => {
   await UserModel.findByIdAndUpdate(req.user.id, { profilePicture: imageUrl });
 
   res.json({ url: imageUrl });
-}
+};
 
 const editProfile = async (req, res) => {
     console.log("Edit profile endpoint hit", req.method, req.url);
@@ -40,6 +40,7 @@ const editProfile = async (req, res) => {
   
       allowedFields.forEach((field) => {
         if (req.body[field] !== undefined) {
+          // Store the objects directly for country, province, city, and languages
           payload[field] = req.body[field];
         }
       });
@@ -59,7 +60,6 @@ const editProfile = async (req, res) => {
       console.error("Error in editing:", err);
       res.status(500).json({ error: "Failed to edit profile", details: err.message });
     }
-  };  
+};  
 
-
-  module.exports = { passUserObject, uploadProfilePicture, editProfile }
+module.exports = { passUserObject, uploadProfilePicture, editProfile };
