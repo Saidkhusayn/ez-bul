@@ -1,5 +1,8 @@
+// First, let's modify your socket.js file to use encryption
+
 const socketIO = require("socket.io");
 const MessageModel = require("../models/Message");
+const { encrypt, decrypt } = require("../utils/encrypt"); // Import the encryption utilities
 
 const setupSocket = (server) => {
     const io = socketIO(server, {
@@ -24,11 +27,15 @@ const setupSocket = (server) => {
         socket.on("sendMessage", async ({ senderId, receiverId, text }) => {
             try {
                 console.log("send message is fired!")
-                // Save message to MongoDB
+                
+                // Encrypt the message before saving
+                const encryptedText = encrypt(text);
+                
+                // Save encrypted message to MongoDB
                 const newMessage = new MessageModel({
                     senderId,
                     receiverId,
-                    encMessage: text,
+                    encMessage: encryptedText, // Store the encrypted message
                 });
 
                 await newMessage.save();
@@ -38,10 +45,12 @@ const setupSocket = (server) => {
                 if (receiverSocket) {
                     io.to(receiverSocket).emit("receiveMessage", {
                         senderId,
-                        text,
+                        text, // Send the original text to the receiver
+                        // Alternative: Send encrypted text and decrypt on client side
+                        // text: encryptedText,
                     });
-                } else{
-                    console.log("No recieverId!")
+                } else {
+                    console.log("No receiverId found!");
                 }
             } catch (error) {
                 console.error("Error saving message:", error);

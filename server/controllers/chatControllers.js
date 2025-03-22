@@ -1,4 +1,5 @@
 const MessageModel = require('../models/Message');
+const {decrypt} = require("../utils/encrypt")
 
 
 const sendMessage = async (req, res) => { //not needed anymore
@@ -32,6 +33,7 @@ const sendMessage = async (req, res) => { //not needed anymore
 
 
 const loadContacts = async(req, res) => {
+    
     try {
         const userId = req.user.id;
         const chats = await MessageModel.find({
@@ -63,7 +65,7 @@ const loadContacts = async(req, res) => {
 
 const loadChatHistory = async(req, res) => {
     const userId = req.user.id;
-    const receiverId  = req.query.receiverId;
+    const receiverId = req.query.receiverId;
 
     if (!receiverId) {
         return res.status(400).json({ error: "Missing the receiver's ID" });
@@ -76,20 +78,26 @@ const loadChatHistory = async(req, res) => {
                 { senderId: userId, receiverId: receiverId },
                 { senderId: receiverId, receiverId: userId } // Include received messages
             ]
-        });
+        }).sort({ createdAt: 1 }); // Sort by creation time to maintain conversation order
 
-        // Create an array to store the messages in the correct format
-        const messages = allMessages.map((message) => ({
-            _id: message._id,
-            text: message.encMessage,
-            isSender: message.senderId.toString() === userId,
-        }));
+        // Create an array to store the messages with decrypted content
+        const messages = allMessages.map((message) => {
+            // Decrypt the message content
+            const decryptedText = decrypt(message.encMessage);
+            
+            return {
+                _id: message._id,
+                text: decryptedText, // Use decrypted text instead of the encrypted version
+                isSender: message.senderId.toString() === userId,
+                createdAt: message.createdAt, // Include timestamps for proper ordering
+            };
+        });
 
         res.json(messages); // Return the messages as a response
     } catch (error) {
         console.error("Error fetching chat history:", error);
         res.status(500).json({ error: "Error fetching chat history" });
     }
-}
+};
 
 module.exports = { sendMessage, loadContacts, loadChatHistory };
