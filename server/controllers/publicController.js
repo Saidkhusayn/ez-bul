@@ -22,9 +22,14 @@ const searchUsers = async(req, res) => {
 
 const viewUser = async (req, res) => {
     try {
-        const username = req.params.username; 
-        const user = await UserModel.findOne({ username }).select("_id username name profilePicture bio type country province languages"); 
+        const identifier = req.params.username; 
+        console.log(username)
+        const user = await UserModel.findOne({
+            $or: [{ username: identifier }, { _id: identifier }]
+        }).select("_id username name profilePicture bio type country province languages");
+        console.log(user) 
         res.json({ user });
+        
     } catch (err) {
         res.status(500).json({ error: "Failed to get user object", details: err.message });
     }

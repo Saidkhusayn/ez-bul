@@ -6,36 +6,74 @@ const setupSocket = require("./sockets/chatSocket");
 const cookieParser = require("cookie-parser");
 require('dotenv').config();
 
-connectDB();
+// Connect to database before initializing app
+connectDB().then(() => {
+  console.log("Database connected successfully");
+}).catch(err => {
+  console.error("Database connection error:", err);
+  process.exit(1); // Exit if database connection fails
+});
 
 const app = express();
 const server = http.createServer(app);
 const io = setupSocket(server); 
 
+// CORS configuration with better security
 const corsOptions = {
-    origin: "http://localhost:5173", // Frontend URL
-    credentials: true, // Allow cookies and authentication headers
-  };
+  origin: process.env.FRONTEND_URL, 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
 
 // Store io instance in the app (for use in routes)
 app.set("io", io);
+// Also make users map available to routes
+app.set("users", io.users); // Make sure io.users is exposed by setupSocket
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); 
 app.use(cookieParser());
 
+// Add basic security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Frame-Options', 'DENY');
+  next();
+});
+
 // Routes
-app.use("/auth", require("./routes/authRoutes"));
 app.use("/", require("./routes/refreshToken"));
-app.use("/", require("./routes/publicRoutes"))
+app.use("/", require("./routes/publicRoutes"));
+app.use("/auth", require("./routes/authRoutes"));
 app.use("/chats", require("./routes/chatsRoute"));
 app.use("/profile", require("./routes/profileRoutes"));
 
-app.get('/', async (req, res) => {
- res.send("Hello World!")
+// Default route
+app.get('/', (req, res) => {
+  res.status(200).send("API is running");
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
 

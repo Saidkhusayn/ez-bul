@@ -1,81 +1,136 @@
-// ChatsList.tsx
 import { useEffect, useState } from "react";
 import { useUI } from "../contexts/UIContext";
 import { fetchWithAuth } from "../api";
+import { formatDistanceToNow } from "date-fns";
+
+// Define proper types for our chat conversations
+interface Conversation {
+  _id: string;
+  userId: string;
+  username: string;
+  name?: string;
+  profilePicture?: string;
+  lastMessage: {
+    _id: string;
+    text: string;
+    senderId: string;
+    timestamp: string;
+    status: "sent" | "delivered" | "read";
+    isSender: boolean;
+  };
+  unreadCount?: number;
+}
 
 const ChatsList = () => {
-  const [contacts, setContacts] = useState<{ 
-    _id: string; 
-    username: string;
-    lastMessage?: string;
-    timestamp?: string;
-    unreadCount?: number;
-    profilePic?: string;
-  }[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const { displayChat } = useUI();
   
   useEffect(() => {
-    const fetchContacts = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("You don't have the token in your localStorage");
-        return;
-      }
-      
+    const fetchConversations = async () => {
+      setLoading(true);
       try {
-        const data = await fetchWithAuth("/chats/load");
-        // Note: You'll need to modify your API to return additional data like lastMessage, timestamp, etc.
-        setContacts(data);
+        // Use the conversations endpoint from our fixed routes
+        const data = await fetchWithAuth("/chats/conversations");
+        setConversations(data);
+        setError(null);
       } catch (error) {
-        console.error("Error fetching contacts:", error);
+        console.error("Error fetching conversations:", error);
+        setError("Failed to load chats. Please try again.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchContacts();
+    
+    fetchConversations();
+    
+    // Optional: Set up a refresh interval
+    const intervalId = setInterval(fetchConversations, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId);
   }, []);
   
+  // Format timestamp to relative time (e.g., "2 hours ago")
+  const formatTime = (timestamp: string) => {
+    try {
+      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+    } catch (e) {
+      return "...";
+    }
+  };
+  
+  // Get message preview with truncation
+  const getMessagePreview = (text: string) => {
+    return text.length > 30 ? text.substring(0, 27) + "..." : text;
+  };
+
   return (
     <div className="chats-list-container">
       <div className="chats-list-header">
         <h2>Your Chats</h2>
       </div>
-      {contacts.length === 0 ? (
+      
+      {loading ? (
+        <div className="empty-chats">
+          <span className="animate-pulse">Loading conversations...</span>
+        </div>
+      ) : error ? (
+        <div className="empty-chats">
+          <span className="text-red-500">{error}</span>
+        </div>
+      ) : conversations.length === 0 ? (
         <div className="empty-chats">
           <div className="empty-state-icon">📭</div>
           <p>No chats yet</p>
         </div>
       ) : (
         <ul className="chats-list">
-          {contacts.map((contact) => (
+          {conversations.map((convo) => (
             <li 
-              key={contact._id} 
-              className="chat-item" 
-              onClick={() => displayChat(contact._id)}
+              key={convo.userId}
+              onClick={() => displayChat(convo.userId)}
+              className="chat-item"
             >
               <div className="chat-avatar">
-                {contact.profilePic ? (
-                  <img src={contact.profilePic} alt={contact.username} />
+                {convo.profilePicture ? (
+                  <img 
+                    src={convo.profilePicture} 
+                    alt={convo.username} 
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="avatar-placeholder">
-                    {contact.username.charAt(0).toUpperCase()}
+                    {(convo.name || convo.username).charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
+              
               <div className="chat-info">
                 <div className="chat-header-outside">
-                  <span className="chat-name">{contact.username}</span>
-                  <span className="chat-time">{contact.timestamp || "..."}</span>
+                  <span className="chat-name">{convo.name || convo.username}</span>
+                  <span className="chat-time">
+                    {formatTime(convo.lastMessage.timestamp)}
+                  </span>
                 </div>
+                
                 <div className="chat-preview">
-                  <p>{contact.lastMessage || "Start chatting..."}</p>
-                  {contact.unreadCount && contact.unreadCount > 0 ? (
-                    <span className="unread-count">{contact.unreadCount}</span>
+                  <p>
+                    {convo.lastMessage.isSender ? "You: " : ""}
+                    {getMessagePreview(convo.lastMessage.text) || "Start chatting..."}
+                  </p>
+                  
+                  {convo.unreadCount && convo.unreadCount > 0 ? (
+                    <span className="unread-count">
+                      {convo.unreadCount}
+                    </span>
                   ) : null}
                 </div>
               </div>
             </li>
           ))}
-        </ ul>
+        </ul>
       )}
     </div>
   );
