@@ -1,39 +1,60 @@
 const socketIO = require("socket.io");
 const MessageModel = require("../models/Message");
+const UserModel = require("../models/Users")
 const { encrypt, decrypt } = require("../utils/encrypt");
 
 const setupSocket = (server) => {
     const io = socketIO(server, {
         cors: {
-            origin: process.env.FRONTEND_URL || "http://localhost:5173",
+            origin: process.env.FRONTEND_URL,
             methods: ["GET", "POST"],
             credentials: true
         }
     });
 
-    // Map to track users - making this accessible to the main app
-    const users = new Map(); // Map userId to socketId
-    io.users = users; // Export the users map
+    const users = new Map(); 
+    io.users = users; 
 
     io.on("connection", (socket) => {
-        console.log("New client connected:", socket.id);
+        //console.log("New client connected:", socket.id);
+        let currentUserId = null;
 
-        // Handle user joining with their userId
         socket.on("join", (userId) => {
             if (!userId) {
                 return socket.emit("error", { message: "Invalid user ID" });
             }
             
+            currentUserId = userId; 
             users.set(userId, socket.id);
             console.log(`User ${userId} connected with socket ID: ${socket.id}`);
-            
-            // Notify user of successful connection
             socket.emit("joined", { success: true });
+            
+            // Broadcast to all clients that this user is online
+            io.emit("userStatusChange", {
+                userId,
+                status: "online"
+            });
+        });
+
+        // Handle client requesting list of online users
+        socket.on("getOnlineUsers", () => {
+            socket.emit("onlineUsers", Array.from(users.keys()));
+        });
+
+        // Handle user status updates (away, online, etc.)
+        socket.on("updateStatus", ({ status }) => {
+            if (currentUserId) {
+                io.emit("userStatusChange", {
+                    userId: currentUserId,
+                    status
+                });
+            }
         });
 
         // Handle sending a message
         socket.on("sendMessage", async ({ senderId, receiverId, text, tempId, timestamp }) => {
             try {
+                // Existing code...
                 if (!senderId || !receiverId || !text) {
                     return socket.emit("messageError", { 
                         error: "Missing required fields", 
@@ -70,10 +91,9 @@ const setupSocket = (server) => {
                 // Emit the message to the receiver if they're online
                 const receiverSocket = users.get(receiverId);
                 if (receiverSocket) {
-                    // Send decrypted message to the receiver
-                    io.to(receiverSocket).emit("receiveMessage", {
+                    io.to(receiverSocket).emit("receiveMessage", { //use the receiveMessage for somekind of action like notification
                         ...messageData,
-                        status: "delivered" // Update status to delivered
+                        status: "delivered" 
                     });
                     
                     // Update message status to delivered in the database
@@ -112,7 +132,7 @@ const setupSocket = (server) => {
                     });
                 }
                 
-                // Find the message
+                // Find the message 
                 const message = await MessageModel.findById(messageId);
                 
                 // Check ownership
@@ -246,13 +266,17 @@ const setupSocket = (server) => {
 
         // Handle disconnection
         socket.on("disconnect", () => {
-            // Find and remove the user from the map
-            users.forEach((socketId, userId) => {
-                if (socketId === socket.id) {
-                    users.delete(userId);
-                    console.log(`User ${userId} disconnected`);
-                }
-            });
+            if (currentUserId) {
+                // Remove the user from online users map
+                users.delete(currentUserId);
+                console.log(`User ${currentUserId} disconnected`);
+                
+                // Broadcast to all clients that this user is offline
+                io.emit("userStatusChange", {
+                    userId: currentUserId,
+                    status: "offline"
+                });
+            }
         });
     });
 

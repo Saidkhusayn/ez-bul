@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useUI } from "../contexts/UIContext";
 import { fetchWithAuth } from "../api";
 import { formatDistanceToNow } from "date-fns";
+import { io } from "socket.io-client";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 // Define proper types for our chat conversations
 interface Conversation {
@@ -18,39 +21,118 @@ interface Conversation {
     status: "sent" | "delivered" | "read";
     isSender: boolean;
   };
-  unreadCount?: number;
+  unreadCount: number;
+  isOnline: boolean;
 }
+
+ // Create a singleton socket connection
+ const socket = io(API_URL, {
+  transports: ["websocket"], 
+  reconnectionAttempts: 5, 
+  timeout: 5000, 
+});
 
 const ChatsList = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   
   const { displayChat } = useUI();
   
+  // Fetch conversations with unread counts
+  const fetchConversations = async () => {
+    setLoading(true);
+    try {
+      // Fetch conversations
+      const conversationsData = await fetchWithAuth("/chats/conversations");
+      
+      // Fetch unread counts for each conversation
+      const conversationsWithCounts = await Promise.all(
+        conversationsData.map(async (convo: any) => {
+          // Only fetch unread count if the last message is not from the current user
+          if (!convo.lastMessage.isSender) {
+            const { count } = await fetchWithAuth(`/chats/unread-count/${convo.userId}`);
+            return { ...convo, unreadCount: count, isOnline: onlineUsers.includes(convo.userId) };
+          }
+          return { ...convo, unreadCount: 0, isOnline: onlineUsers.includes(convo.userId) };
+        })
+      );
+      
+      setConversations(conversationsWithCounts);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setError("Failed to load chats. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   useEffect(() => {
-    const fetchConversations = async () => {
-      setLoading(true);
-      try {
-        // Use the conversations endpoint from our fixed routes
-        const data = await fetchWithAuth("/chats/conversations");
-        setConversations(data);
-        setError(null);
-      } catch (error) {
-        console.error("Error fetching conversations:", error);
-        setError("Failed to load chats. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchConversations();
     
-    // Optional: Set up a refresh interval
-    const intervalId = setInterval(fetchConversations, 30000); // Refresh every 30 seconds
-    
+    const intervalId = setInterval(fetchConversations, 30000); 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [onlineUsers]);
+  
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+    
+    // Listen for online users
+    socket.on("onlineUsers", (users: string[]) => {
+      setOnlineUsers(users);
+    });
+    
+    // Request online users list
+    socket.emit("getOnlineUsers");
+    
+    // Listen for user status changes
+    socket.on("userStatusChange", ({ userId, status }: { userId: string, status: string }) => {
+      setOnlineUsers(prev => {
+        if (status === "online" && !prev.includes(userId)) {
+          return [...prev, userId];
+        } else if (status === "offline") {
+          return prev.filter(id => id !== userId);
+        }
+        return prev;
+      });
+    });
+    
+    // Listen for new messages to update unread counts
+    socket.on("receiveMessage", (message) => {
+      fetchConversations(); // Refresh conversations to update unread counts
+    });
+    
+    // Listen for message status updates
+    socket.on("messageStatus", ({ messageId, status }) => {
+      if (status === "read") {
+        // Update the conversation with this message
+        setConversations(prevConversations => 
+          prevConversations.map(convo => {
+            if (convo.lastMessage._id === messageId) {
+              return {
+                ...convo,
+                lastMessage: {
+                  ...convo.lastMessage,
+                  status
+                }
+              };
+            }
+            return convo;
+          })
+        );
+      }
+    });
+    
+    return () => {
+      socket.off("onlineUsers");
+      socket.off("userStatusChange");
+      socket.off("receiveMessage");
+      socket.off("messageStatus");
+    };
+  }, [socket]);
   
   // Format timestamp to relative time (e.g., "2 hours ago")
   const formatTime = (timestamp: string) => {
@@ -98,12 +180,14 @@ const ChatsList = () => {
                   <img 
                     src={convo.profilePicture} 
                     alt={convo.username} 
-                    className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="avatar-placeholder">
                     {(convo.name || convo.username).charAt(0).toUpperCase()}
                   </div>
+                )}
+                {convo.isOnline && (
+                  <span className="online-indicator"></span>
                 )}
               </div>
               
@@ -121,11 +205,11 @@ const ChatsList = () => {
                     {getMessagePreview(convo.lastMessage.text) || "Start chatting..."}
                   </p>
                   
-                  {convo.unreadCount && convo.unreadCount > 0 ? (
+                  {convo.unreadCount > 0 && (
                     <span className="unread-count">
                       {convo.unreadCount}
                     </span>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </li>

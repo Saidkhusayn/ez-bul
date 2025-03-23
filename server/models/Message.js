@@ -14,6 +14,6 @@ const MessageSchema = new mongoose.Schema(
   
 // Create indexes for faster queries
 MessageSchema.index({ senderId: 1, receiverId: 1 });
-MessageSchema.index({ createdAt: -1 }); // Use createdAt which is added by timestamps option
+MessageSchema.index({ createdAt: -1 }); 
 
 module.exports = mongoose.model("Message", MessageSchema);

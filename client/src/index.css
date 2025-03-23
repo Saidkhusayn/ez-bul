@@ -296,12 +296,12 @@
   position: fixed;
   bottom: 35px;
   left: 10px;
-  width: 320px;
-  height: 80vh;
+  width: 440px;
+  height: 85vh;
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateX(-330px);
+  transform: translateX(-450px);
   transition: transform 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
@@ -315,7 +315,7 @@
 .sidebar-toggle {
   position: fixed; 
   bottom: 50%; 
-  right: -22%; 
+  right: -18%; 
   background: #0073b1;
   color: white;
   border: none;
@@ -340,6 +340,12 @@
   display: flex;
   flex-direction: column;
 }
+
+
+
+
+
+
 
 /* ======= CHATS LIST STYLING ======= */
 .chats-list-container {
@@ -382,16 +388,14 @@
 }
 
 .chat-avatar {
-  width: 50px; /* Reduced from 50px */
-  height: 50px; /* Reduced from 50px */
+  position: relative;
+  width: 50px; 
+  height: 50px; 
   border-radius: 50%;
   margin-right: 12px;
   flex-shrink: 0;
   overflow: hidden;
-  background-color: #e6e6e6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: white;
 }
 
 .chat-avatar img {
@@ -472,6 +476,10 @@
   font-weight: 500;
 }
 
+
+
+
+
 /* ======= EMPTY STATES ======= */
 .empty-chats, .no-chat-selected {
   display: flex;
@@ -493,6 +501,11 @@
   margin: 0;
   font-size: 15px;
 }
+
+
+
+
+
 
 /* ======= CHAT COMPONENT STYLING ======= */
 .chat-container {
@@ -589,6 +602,7 @@
 .message-bubble {
   display: flex;
   max-width: 70%;
+  text-align: center; 
   padding: 5px;
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -607,9 +621,7 @@
 }
 
 .message-text {
-  padding: 5px 0px;
-  padding-left: 10px;
-  padding-right: 4px;
+  padding: 0 3px;
   margin: 0;
   word-wrap: break-word;
   font-size: 15px;
@@ -619,7 +631,6 @@
 .message-span {
   font-size: 11px;
   opacity: 0.8;
-  margin-top: 4px;
   display: block;
   text-align: right;
 }

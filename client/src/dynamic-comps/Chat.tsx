@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { io } from "socket.io-client";
 import { fetchWithAuth } from "../api";
 import { format } from "date-fns";
-import { Check, CheckCheck, Edit, Trash2, X, Send, Ellipsis } from 'lucide-react';
+import { Check, CheckCheck, Pencil, Trash2, X, Send, Ellipsis } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
   timestamp: string;
   edited: boolean;
   isSender: boolean;
-  status?: "sent" | "delivered" | "read"; //remove the delivered
+  status?: "sent" | "delivered" | "read";
 }
 
 interface ChatProps {
@@ -33,6 +33,8 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const { userId } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  //@ts-ignore fix that
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]); 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -45,11 +47,14 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); //taste if it is working and how
+  const [receiverIsTyping, setReceiverIsTyping] = useState(false);
+  const [showActions, setShowActions] = useState<boolean>(false)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, receiverIsTyping]);
 
   // Handle socket connections
   useEffect(() => {
@@ -62,6 +67,9 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
           ...message, 
           isSender: false 
         }]);
+        
+        // Mark received message as read immediately
+        markMessageAsRead(message._id);
       }
     });
 
@@ -92,11 +100,19 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       );
     });
 
+    // Listen for typing indicators
+    socket.on("userTyping", ({ userId: typingUserId, isTyping }) => {
+      if (typingUserId === receiverId) {
+        setReceiverIsTyping(isTyping);
+      }
+    });
+
     return () => {
       socket.off("receiveMessage");
       socket.off("messageUpdated");
       socket.off("messageDeleted");
       socket.off("messageStatus");
+      socket.off("userTyping");
     };
   }, [userId, receiverId]);
 
@@ -109,8 +125,8 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         setReceiverAvatar(userData.profilePicture || "");
         
         // If you implement online status tracking, set these values
-         setIsOnline(userData.isOnline || false);
-         setLastSeen(userData.lastSeen || null);
+        setIsOnline(userData.isOnline || false);
+        setLastSeen(userData.lastSeen || null);
       } catch (error) {
         console.error("Error fetching receiver info:", error);
       }
@@ -118,6 +134,28 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     
     fetchReceiverInfo();
   }, [receiverId]);
+  
+  // Mark messages as read
+  const markMessageAsRead = (messageId: string) => {
+    // Emit socket event to mark message as read
+    socket.emit("markAsRead", {
+      messageIds: [messageId],
+      receiverId: userId,
+      senderId: receiverId
+    });
+    
+    // Also call API to update server-side
+    fetchWithAuth("/chats/mark-read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messageIds: [messageId],
+        senderId: receiverId
+      })
+    }).catch(err => {
+      console.error("Error marking message as read:", err);
+    });
+  };
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +177,8 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         isSender: true,
         status: "sent" as const
       };
-      //@ts-ignore //loooook
+      
+      //@ts-ignore    fix that
       setMessages((prev) => [...prev, newMessage]);
 
       // Send to server using your socket implementation
@@ -147,8 +186,15 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         senderId: userId,
         receiverId,
         text: messageText,
+        tempId,
         timestamp
       });
+      
+      // Stop typing indicator
+      sendTypingStatus(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
     form.reset();
   };
@@ -210,13 +256,52 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       });
     }
   };
+  
+  // Handle typing status
+  const sendTypingStatus = (isTyping: boolean) => {
+    if (socket) {
+      socket.emit("typing", {
+        senderId: userId,
+        receiverId,
+        isTyping
+      });
+    }
+  };
+  
+  // Handle input changes with typing indicator
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Send typing indicator on first keystroke
+    if (inputValue.length === 1 && !isTyping) {
+      setIsTyping(true);
+      sendTypingStatus(true);
+    }
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Set timeout to stop typing indicator
+    if (inputValue.length > 0) {
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        sendTypingStatus(false);
+      }, 2000);
+    } else {
+      // No text, clear typing immediately
+      setIsTyping(false);
+      sendTypingStatus(false);
+    }
+  };
 
   const fetchChatHistory = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get decrypted messages from your API
+      // Get messages from your API
       const data = await fetchWithAuth(`/chats/history/${receiverId}`);
       
       // Transform the data to include isSender flag
@@ -226,6 +311,29 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       }));
       
       setMessages(formattedMessages);
+      
+      // Mark unread received messages as read
+      const unreadMessageIds = formattedMessages
+        .filter((msg: Message) => !msg.isSender && msg.status !== "read")
+        .map((msg: Message) => msg._id);
+      
+      if (unreadMessageIds.length > 0) {
+        // Mark as read via REST API
+        await fetchWithAuth("/chats/mark-read", {
+          method: "POST",
+          body: JSON.stringify({
+            messageIds: unreadMessageIds,
+            senderId: receiverId
+          })
+        });
+        
+        // Also mark as read via socket for real-time updates
+        socket.emit("markAsRead", {
+          messageIds: unreadMessageIds,
+          receiverId: userId,
+          senderId: receiverId
+        });
+      }
     } catch (error) {
       console.error("Error fetching chat history:", error);
       setError("Error fetching chat history");
@@ -239,22 +347,33 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   }, [receiverId]);
 
   // Format timestamp into readable format
-  const formatMessageTime = (timestamp: string) => {
+  const formatMessageDate = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-
+  
       if (date.toDateString() === today.toDateString()) {
-        return format(date, 'HH:mm'); // Today: 3:42 PM
+        return "Today";
       } else if (date.toDateString() === yesterday.toDateString()) {
-        return `Yesterday, ${format(date, 'HH:mm')}`; // Yesterday, 3:42 PM
+        return "Yesterday";
+      } else if (date.getFullYear() === today.getFullYear()) {
+        return format(date, "MMM d"); 
       } else {
-        return format(date, 'MMM d, HH:mm'); // Jan 5, 3:42 PM
+        return format(date, "MMM d, yyy"); 
       }
     } catch (error) {
-      return 'Just now';
+      return "Unknown Date";
+    }
+  };
+  
+  const formatMessageTime = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return format(date, "HH:mm"); // Example: 15:41
+    } catch (error) {
+      return "Just now";
     }
   };
 
@@ -265,8 +384,9 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         return <Check size={14} className="text-gray-400" />;
       case "delivered":
         return <div className="double-check">
-          <Check size={14} className="text-gray-400" style={{ marginRight: '-4px' }} />
-          <Check size={14} className="text-gray-400" />
+          <Check size={14} className="text-gray-400" />   {
+            // work on makinf the delivered/sent differnt maybe
+          }
         </div>;
       case "read":
         return <CheckCheck size={14} className="text-blue-500" />;
@@ -275,8 +395,87 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     }
   };
 
+  // Function to determine if we should show a date header
+  const shouldShowDateHeader = (currentMessage: Message, previousMessage: Message | null) => {
+    if (!previousMessage) {
+      return true;
+    }
+
+    const currentDate = new Date(currentMessage.timestamp).toDateString();
+    const previousDate = new Date(previousMessage.timestamp).toDateString();
+    return currentDate !== previousDate;
+  };
+
+  // Group messages by date for rendering 
+  const renderMessagesWithDateHeaders = () => {
+
+    return messages.map((message, index) => {
+      const previousMessage = index > 0 ? messages[index - 1] : null;
+      const showDateHeader = shouldShowDateHeader(message, previousMessage);
+
+      return (
+        <React.Fragment key={message._id}>
+          {showDateHeader && (
+            <div className="date-header">
+              <div className="date-divider">
+                <span className="date-text small">{formatMessageDate(message.timestamp)}</span>
+              </div>
+            </div>
+          )}
+          <div 
+            className={`message ${message.isSender ? 'message-sent' : 'message-received'}`}
+          >
+            <div className="message-bubble position-relative">
+              <p className="message-text">{message.text}</p>
+              <div>
+                <div>
+                  <span className="ellipsis-icon d-flex justify-content-end">
+                    <Ellipsis size={15} onClick={
+                      () => {setShowActions(true)} //make reusable function to make the box disappear when the outside of it is clicked
+                    }/>
+                  </span>               
+                </div>
+                {showActions && message.isSender && (
+                  <ul className="dropdown-list">
+                    <li 
+                      className="dropdown-item" 
+                      onClick={() => handleEdit(message._id, message.text)}
+                      aria-label="Edit message"
+                    >
+                      <Pencil size={13} />
+                    </li>
+                    <li 
+                      className="dropdown-item" 
+                      onClick={() => handleDelete(message._id)}
+                      aria-label="Delete message"
+                    >
+                      <Trash2 size={13}/>
+                    </li>
+                  </ul>
+                )}
+                <div>
+                  <div className="message-info d-flex align-items-end justify-content-end gap-1">
+                    {message.edited && <span className="message-span">edited</span>}
+                    <span className="message-span">
+                      {formatMessageTime(message.timestamp)} 
+                    </span>
+                    {message.isSender && (
+                      <span className="message-span">
+                        {getStatusIcon(message.status)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </React.Fragment>
+      );
+    });
+  };
+
   return (
-<div className="chat-container">
+    <div className="chat-container">
       {/* Chat header */}
       <div className="chat-header-inside">
         <div className="chat-header-info">
@@ -336,44 +535,20 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         
         {!loading && !error && messages.length > 0 && (
           <div className="messages-container">
-            {messages.map((msg, index) => (
-              <div 
-                key={msg._id} 
-                className={`message ${msg.isSender ? 'message-sent' : 'message-received'}`}
-              >
-                <div className="message-bubble">
-                  <p className="message-text">{msg.text}</p>
-
-                  <div>
-                    <div>
-                      <span className="ellipsis-icon d-flex justify-content-end">
-                        <Ellipsis size={15} />
-                      </span>               
-                    </div>
-
-                    <div>
-                      <div className="message-info d-flex align-items-end justify-content-end gap-1">
-                        {msg.edited && <span className="message-span">edited</span>}
-                        <span className="message-span ">
-                          {formatMessageTime(msg.timestamp)} 
-                        </span>
-                        {msg.isSender && (
-                          <span className="message-span">
-                            {getStatusIcon(msg.status)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
+            {renderMessagesWithDateHeaders()}
             
-                {
-                  //paste here
-                }
+            {/* Typing indicator */}
+            {receiverIsTyping && (
+              <div className="typing-indicator">
+                <div className="typing-bubble">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
+            )}
+          
+            <div ref={messagesEndRef}/>
           </div>
         )}
       </div>
@@ -413,6 +588,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
                 name="message"
                 placeholder="Type a message..."
                 autoComplete="off"
+                onChange={handleInputChange}
                 required
               />
               <button type="submit" className="send-button">

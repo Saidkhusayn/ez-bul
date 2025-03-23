@@ -11,14 +11,14 @@ connectDB().then(() => {
   console.log("Database connected successfully");
 }).catch(err => {
   console.error("Database connection error:", err);
-  process.exit(1); // Exit if database connection fails
+  process.exit(1); 
 });
 
 const app = express();
 const server = http.createServer(app);
 const io = setupSocket(server); 
 
-// CORS configuration with better security
+// CORS configuration
 const corsOptions = {
   origin: process.env.FRONTEND_URL, 
   credentials: true,
@@ -26,10 +26,9 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"]
 };
 
-// Store io instance in the app (for use in routes)
+// Storing io instances
 app.set("io", io);
-// Also make users map available to routes
-app.set("users", io.users); // Make sure io.users is exposed by setupSocket
+app.set("users", io.users); 
 
 // Middleware
 app.use(cors(corsOptions));

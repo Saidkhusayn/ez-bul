@@ -17,35 +17,117 @@ const getHistory = async (req, res) => {
             return res.status(400).json({ error: "Invalid receiver ID" });
         }
         
-        // Fetch encrypted messages - using proper ObjectId comparison
         const messages = await MessageModel.find({
             $or: [
                 { senderId: userId, receiverId: receiverId },
                 { senderId: receiverId, receiverId: userId }
             ]
         }).sort({ createdAt: 1 });
-        
-        // Decrypt messages
+
         const decryptedMessages = messages.map(msg => {
             const message = msg.toObject();
             return {
                 _id: message._id,
                 senderId: message.senderId,
-                text: decrypt(message.encMessage), // Decrypt the message
+                text: decrypt(message.encMessage),
                 timestamp: message.createdAt,
                 updatedAt: message.updatedAt,
                 status: message.status,
                 edited: message.edited,
-                isSender: message.senderId.toString() === userId
+                isSender: message.senderId.toString() === userId,
             };
         });
         
         res.json(decryptedMessages);
+
     } catch (error) {
         console.error("Error fetching chat history:", error);
         res.status(500).json({ error: "Failed to fetch chat history" });
     }
 };
+
+// Get recent conversations
+router.get("/conversations", authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const objectId = new mongoose.Types.ObjectId(userId);
+        
+        // Find the latest message with each user - fixed aggregation
+        const latestMessages = await MessageModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { senderId: objectId },
+                        { receiverId: objectId }
+                    ]
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ["$senderId", objectId] },
+                            "$receiverId",
+                            "$senderId"
+                        ]
+                    },
+                    lastMessage: { $first: "$$ROOT" }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users", // Make sure this matches your actual collection name
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "userInfo"
+                }
+            },
+            {
+                $unwind: "$userInfo"
+            },
+            {
+                $project: {
+                    _id: 1,
+                    userId: "$_id",
+                    username: "$userInfo.username",
+                    name: "$userInfo.name",
+                    profilePicture: "$userInfo.profilePicture",
+                    lastMessage: {
+                        _id: "$lastMessage._id",
+                        text: "$lastMessage.encMessage", 
+                        senderId: "$lastMessage.senderId",
+                        timestamp: "$lastMessage.createdAt",
+                        status: "$lastMessage.status"
+                    }
+                }
+            },
+            {
+                $sort: { "lastMessage.timestamp": -1 } 
+            }
+        ]);
+        
+        // Decrypt the last messages
+        const decryptedConversations = latestMessages.map(convo => {
+            return {
+                ...convo,
+                lastMessage: {
+                    ...convo.lastMessage,
+                    text: decrypt(convo.lastMessage.text),
+                    isSender: convo.lastMessage.senderId.toString() === userId
+                }
+            };
+        });
+        
+        res.json(decryptedConversations);
+
+    } catch (error) {
+        console.error("Error fetching conversations:", error);
+        res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+});
 
 // Delete a message
 router.delete("/message/:messageId", authMiddleware, async (req, res) => {
@@ -183,8 +265,8 @@ router.post("/mark-read", authMiddleware, async (req, res) => {
             { 
                 _id: { $in: validMessageIds },
                 senderId,
-                receiverId: userId, // Ensure the authenticated user is the receiver
-                status: { $ne: "read" } // Only update if not already read
+                receiverId: userId, 
+                status: { $ne: "read" } 
             },
             { $set: { status: "read" } }
         );
@@ -211,88 +293,6 @@ router.post("/mark-read", authMiddleware, async (req, res) => {
     } catch (error) {
         console.error("Error marking messages as read:", error);
         res.status(500).json({ error: "Failed to mark messages as read" });
-    }
-});
-
-// Get recent conversations
-router.get("/conversations", authMiddleware, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const objectId = new mongoose.Types.ObjectId(userId);
-        
-        // Find the latest message with each user - fixed aggregation
-        const latestMessages = await MessageModel.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { senderId: objectId },
-                        { receiverId: objectId }
-                    ]
-                }
-            },
-            {
-                $sort: { createdAt: -1 }
-            },
-            {
-                $group: {
-                    _id: {
-                        $cond: [
-                            { $eq: ["$senderId", objectId] },
-                            "$receiverId",
-                            "$senderId"
-                        ]
-                    },
-                    lastMessage: { $first: "$$ROOT" }
-                }
-            },
-            {
-                $lookup: {
-                    from: "users", // Make sure this matches your actual collection name
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "userInfo"
-                }
-            },
-            {
-                $unwind: "$userInfo"
-            },
-            {
-                $project: {
-                    _id: 1,
-                    userId: "$_id",
-                    username: "$userInfo.username",
-                    name: "$userInfo.name",
-                    profilePicture: "$userInfo.profilePicture",
-                    lastMessage: {
-                        _id: "$lastMessage._id",
-                        text: "$lastMessage.encMessage", // Still encrypted
-                        senderId: "$lastMessage.senderId",
-                        timestamp: "$lastMessage.createdAt",
-                        status: "$lastMessage.status"
-                    }
-                }
-            },
-            {
-                $sort: { "lastMessage.timestamp": -1 } // Sort by most recent message
-            }
-        ]);
-        
-        // Decrypt the last messages
-        const decryptedConversations = latestMessages.map(convo => {
-            return {
-                ...convo,
-                lastMessage: {
-                    ...convo.lastMessage,
-                    text: decrypt(convo.lastMessage.text), // Decrypt message text
-                    isSender: convo.lastMessage.senderId.toString() === userId
-                }
-            };
-        });
-        
-        res.json(decryptedConversations);
-    } catch (error) {
-        console.error("Error fetching conversations:", error);
-        res.status(500).json({ error: "Failed to fetch conversations" });
     }
 });
 
