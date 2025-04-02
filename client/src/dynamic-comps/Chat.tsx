@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext"; 
 import { io } from "socket.io-client";
 import { fetchWithAuth } from "../api";
 import { format } from "date-fns";
-import { Check, CheckCheck, Pencil, Trash2, X, Send, Ellipsis } from 'lucide-react';
+import { Check, CheckCheck, CircleCheckBig, Pencil, Trash2, X, Send, Ellipsis } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Message {
@@ -49,12 +49,24 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const [isOnline, setIsOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false); //taste if it is working and how
   const [receiverIsTyping, setReceiverIsTyping] = useState(false);
-  const [showActions, setShowActions] = useState<boolean>(false)
+  const [showActions, setShowActions] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, receiverIsTyping]);
+
+
+  // Fetch unread message count more frequently
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const data = await fetchWithAuth(`/chats/unread-count/${receiverId}`);
+      setUnreadCount(data.count);
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  }, [receiverId]);
 
   // Handle socket connections
   useEffect(() => {
@@ -84,7 +96,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       );
     });
 
-    // Listen for message deletions
+    // Listen for message deletions markAsRead
     socket.on("messageDeleted", (messageId) => {
       setMessages(prev => prev.filter(msg => msg._id !== messageId));
     });
@@ -127,16 +139,34 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         // If you implement online status tracking, set these values
         setIsOnline(userData.isOnline || false);
         setLastSeen(userData.lastSeen || null);
+        // Fetch unread count immediately
+        fetchUnreadCount();
       } catch (error) {
         console.error("Error fetching receiver info:", error);
       }
     };
     
     fetchReceiverInfo();
+
+    const unreadCountInterval = setInterval(fetchUnreadCount, 2000); // Every 2 seconds
+
+    return () => {
+      clearInterval(unreadCountInterval);
+    };
   }, [receiverId]);
   
   // Mark messages as read
-  const markMessageAsRead = (messageId: string) => {
+  const markMessageAsRead = (messageId: string) => { //only make them as read when he scrolls to them
+
+    // Optimistic update to status
+    setMessages(prev => 
+      prev.map(msg => 
+        msg._id === messageId 
+          ? { ...msg, status: "read" } 
+          : msg
+      )
+    );
+    
     // Emit socket event to mark message as read
     socket.emit("markAsRead", {
       messageIds: [messageId],
@@ -147,7 +177,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     // Also call API to update server-side
     fetchWithAuth("/chats/mark-read", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      //headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messageIds: [messageId],
         senderId: receiverId
@@ -257,7 +287,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     }
   };
   
-  // Handle typing status
+  // Handle typing status userTyping
   const sendTypingStatus = (isTyping: boolean) => {
     if (socket) {
       socket.emit("typing", {
@@ -272,8 +302,8 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     
-    // Send typing indicator on first keystroke
-    if (inputValue.length === 1 && !isTyping) {
+    // Send typing indicator
+    if (inputValue.length !== 0 && !isTyping) {
       setIsTyping(true);
       sendTypingStatus(true);
     }
@@ -288,7 +318,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       typingTimeoutRef.current = setTimeout(() => {
         setIsTyping(false);
         sendTypingStatus(false);
-      }, 2000);
+      }, 3000);
     } else {
       // No text, clear typing immediately
       setIsTyping(false);
@@ -312,7 +342,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       
       setMessages(formattedMessages);
       
-      // Mark unread received messages as read
+      // Mark unread received messages as read 
       const unreadMessageIds = formattedMessages
         .filter((msg: Message) => !msg.isSender && msg.status !== "read")
         .map((msg: Message) => msg._id);
@@ -377,23 +407,31 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     }
   };
 
-  // Get message status icon
-  const getStatusIcon = (status?: string) => {
+// Create a memoized component for the status icon
+const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
+  const getStatusIcon = React.useMemo(() => {
     switch (status) {
       case "sent":
         return <Check size={14} className="text-gray-400" />;
       case "delivered":
-        return <div className="double-check">
-          <Check size={14} className="text-gray-400" />   {
-            // work on makinf the delivered/sent differnt maybe
-          }
-        </div>;
+        return (
+          <div className="double-check">
+            <CircleCheckBig size={14} className="text-gray-400" />
+          </div>
+        );
       case "read":
         return <CheckCheck size={14} className="text-blue-500" />;
       default:
-        return "";
+        return null;
     }
-  };
+  }, [status]);
+
+  return (
+    <span className="message-span">
+      {getStatusIcon}
+    </span>
+  );
+});
 
   // Function to determine if we should show a date header
   const shouldShowDateHeader = (currentMessage: Message, previousMessage: Message | null) => {
@@ -461,7 +499,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
                     </span>
                     {message.isSender && (
                       <span className="message-span">
-                        {getStatusIcon(message.status)}
+                         <MessageStatusIcon status={message.status} />
                       </span>
                     )}
                   </div>
@@ -494,7 +532,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
             {isOnline && <span className="status-indicator online"></span>}
           </div>
           <div className="user-info">
-            <h3>{receiverName}</h3>
+            <h5>{receiverName}</h5>
             {isOnline && <span className="status-text">Online</span>}
           </div>
         </div>
@@ -541,9 +579,9 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
             {receiverIsTyping && (
               <div className="typing-indicator">
                 <div className="typing-bubble">
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
-                  <span className="typing-dot"></span>
+                  <span className="typing-dot">.</span>
+                  <span className="typing-dot">.</span>
+                  <span className="typing-dot">.</span>
                 </div>
               </div>
             )}

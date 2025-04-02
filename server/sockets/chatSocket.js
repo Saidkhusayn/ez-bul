@@ -54,7 +54,6 @@ const setupSocket = (server) => {
         // Handle sending a message
         socket.on("sendMessage", async ({ senderId, receiverId, text, tempId, timestamp }) => {
             try {
-                // Existing code...
                 if (!senderId || !receiverId || !text) {
                     return socket.emit("messageError", { 
                         error: "Missing required fields", 
@@ -66,8 +65,6 @@ const setupSocket = (server) => {
                 
                 // Encrypt the message before saving
                 const encryptedText = encrypt(text);
-                
-                // Save encrypted message to MongoDB
                 const newMessage = new MessageModel({
                     senderId,
                     receiverId,
@@ -81,7 +78,7 @@ const setupSocket = (server) => {
 
                 const messageData = {
                     _id: newMessage._id,
-                    text, // Send original text, not encrypted
+                    text, 
                     senderId,
                     timestamp: newMessage.createdAt,
                     status: "sent",
