@@ -42,7 +42,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   
   const [receiverName, setReceiverName] = useState("User");
   const [receiverAvatar, setReceiverAvatar] = useState("");
-  const [lastSeen, setLastSeen] = useState<string | null>(null);
+  //const [lastSeen, setLastSeen] = useState<string | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   }, [messages, receiverIsTyping]);
 
 
-  // Fetch unread message count more frequently
+  // Fetch unread message count more frequently --- look
   const fetchUnreadCount = useCallback(async () => {
     try {
       const data = await fetchWithAuth(`/chats/unread-count/${receiverId}`);
@@ -68,9 +68,20 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     }
   }, [receiverId]);
 
-  // Handle socket connections
-  useEffect(() => {
-    socket.emit("join", userId);
+    // Handle socket connections
+    useEffect(() => {
+      socket.emit("join", userId);
+
+    // Add this new listener for message creation confirmation
+    socket.on("messageSent", ({ tempId, messageId, timestamp }) => {
+      setMessages(prev => 
+        prev.map(msg => 
+          msg._id === tempId 
+            ? { ...msg, _id: messageId, timestamp, status: "delivered" } 
+            : msg
+        )
+      );
+    });
 
     // Listen for incoming messages
     socket.on("receiveMessage", (message) => {
@@ -80,7 +91,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
           isSender: false 
         }]);
         
-        // Mark received message as read immediately
+        // Mark received message as read immediately --- first go down and see if the user looked at the down messages (secondary)
         markMessageAsRead(message._id);
       }
     });
@@ -96,7 +107,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       );
     });
 
-    // Listen for message deletions markAsRead
+    // Listen for message deletions 
     socket.on("messageDeleted", (messageId) => {
       setMessages(prev => prev.filter(msg => msg._id !== messageId));
     });
@@ -119,12 +130,26 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       }
     });
 
+    // Listen for online users
+    socket.on("userStatusChange", ({ userId: changedUserId, status }) => {
+      if (changedUserId === receiverId) {
+        setIsOnline(status === "online");
+      }
+    });
+  
+    socket.on("onlineUsers", (onlineUserIds: string[]) => {
+      setIsOnline(onlineUserIds.includes(receiverId));
+    });
+
     return () => {
+      socket.off("messageSent");
       socket.off("receiveMessage");
       socket.off("messageUpdated");
       socket.off("messageDeleted");
       socket.off("messageStatus");
       socket.off("userTyping");
+      socket.off("userStatusChange");
+      socket.off("onlineUsers");
     };
   }, [userId, receiverId]);
 
@@ -136,9 +161,6 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
         setReceiverName(userData.name || "User");
         setReceiverAvatar(userData.profilePicture || "");
         
-        // If you implement online status tracking, set these values
-        setIsOnline(userData.isOnline || false);
-        setLastSeen(userData.lastSeen || null);
         // Fetch unread count immediately
         fetchUnreadCount();
       } catch (error) {
@@ -153,6 +175,10 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
     return () => {
       clearInterval(unreadCountInterval);
     };
+  }, [receiverId]);
+
+  useEffect(() => {
+    socket.emit("getOnlineUsers");
   }, [receiverId]);
   
   // Mark messages as read

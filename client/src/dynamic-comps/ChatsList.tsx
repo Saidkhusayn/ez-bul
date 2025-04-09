@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import { useUI } from "../contexts/UIContext";
+import { useAuth } from "../contexts/AuthContext";
 import { fetchWithAuth } from "../api";
 import { formatDistanceToNow } from "date-fns";
 import { io } from "socket.io-client";
@@ -39,6 +40,7 @@ const ChatsList = () => {
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   
   const { displayChat } = useUI();
+  const { userId } = useAuth();
   
   // Fetch conversations with unread counts
   const fetchConversations = async () => {
@@ -79,6 +81,8 @@ const ChatsList = () => {
   // Socket event listeners for real-time updates
   useEffect(() => {
     if (!socket) return;
+
+    socket.emit("join", userId);
     
     // Listen for online users
     socket.on("onlineUsers", (users: string[]) => {
@@ -102,7 +106,48 @@ const ChatsList = () => {
     
     // Listen for new messages to update unread counts
     socket.on("receiveMessage", (message) => {
-      fetchConversations(); // Refresh conversations to update unread counts
+      console.log('message is received');
+      
+      // First update existing conversations
+      setConversations(prevConversations => {
+        // Check if this sender already exists in conversations
+        const existingConvoIndex = prevConversations.findIndex(
+          convo => convo.userId === message.senderId
+        );
+        
+        // If conversation exists, update it
+        if (existingConvoIndex >= 0) {
+          const updatedConversations = [...prevConversations];
+          const convo = updatedConversations[existingConvoIndex];
+          
+          // Update with new message and increment unread count
+          updatedConversations[existingConvoIndex] = {
+            ...convo,
+            lastMessage: {
+              _id: message._id,
+              text: message.text,
+              senderId: message.senderId,
+              timestamp: message.timestamp || new Date().toISOString(),
+              status: message.status || "delivered",
+              isSender: false
+            },
+            unreadCount: convo.unreadCount + 1
+          };
+          
+          // Move this conversation to the top (most recent)
+          if (existingConvoIndex > 0) {
+            const movedConvo = updatedConversations.splice(existingConvoIndex, 1)[0];
+            updatedConversations.unshift(movedConvo);
+          }
+          
+          return updatedConversations;
+        } else {
+          // If this is a completely new conversation, fetch fresh data
+          // This is more reliable than trying to construct a new conversation object
+          fetchConversations();
+          return prevConversations;
+        }
+      });
     });
     
     // Listen for message status updates

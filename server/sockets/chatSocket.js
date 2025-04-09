@@ -26,7 +26,7 @@ const setupSocket = (server) => {
             
             currentUserId = userId; 
             users.set(userId, socket.id);
-            console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+            console.log(`User ${userId} connected with socket ID: ${socket.id}.`);
             socket.emit("joined", { success: true });
             
             // Broadcast to all clients that this user is online
@@ -51,7 +51,7 @@ const setupSocket = (server) => {
             }
         });
 
-        // Handle sending a message
+        // Handle sending a message leave
         socket.on("sendMessage", async ({ senderId, receiverId, text, tempId, timestamp }) => {
             try {
                 if (!senderId || !receiverId || !text) {
@@ -102,6 +102,8 @@ const setupSocket = (server) => {
                         status: "delivered",
                         tempId
                     });
+                } else {
+                    console.log(`Receiver ${receiverId} not online, queueing for next fetch`);
                 }
                 
                 // Send the message ID back to the sender for reference
