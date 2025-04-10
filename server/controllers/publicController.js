@@ -22,17 +22,32 @@ const searchUsers = async(req, res) => {
 
 const viewUser = async (req, res) => {
     try {
-        const username = req.params.username; 
-        console.log(username)
-        const user = await UserModel.findOne({
-            $or: [{ username: username }, { _id: username }]
-        }).select("_id username name profilePicture bio type country province languages");
-        console.log(user) 
+        const identifier = req.params.username;
+        console.log("Looking up user with identifier:", identifier);
+        
+        // Check if the identifier is a valid MongoDB ObjectId
+        const ObjectId = require('mongoose').Types.ObjectId;
+        const isValidObjectId = ObjectId.isValid(identifier);
+        
+        // Build query based on whether identifier might be an ObjectId
+        let query = { username: identifier };
+        if (isValidObjectId) {
+          query = { $or: [{ username: identifier }, { _id: identifier }] };
+        }
+        
+        const user = await UserModel.findOne(query);
+        
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        
+        console.log("Found user:", user);
         res.json(user);
         
-    } catch (err) {
+      } catch (err) {
+        console.error("Error in viewUser:", err);
         res.status(500).json({ error: "Failed to get user object", details: err.message });
-    }
+      }
   };
 
 

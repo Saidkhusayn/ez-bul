@@ -44,11 +44,12 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use("/profile", require("./routes/profileRoutes"));
 app.use("/", require("./routes/refreshToken"));
 app.use("/", require("./routes/publicRoutes"));
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/chats", require("./routes/chatsRoute"));
-app.use("/profile", require("./routes/profileRoutes"));
+
 
 // Default route
 app.get('/', (req, res) => {

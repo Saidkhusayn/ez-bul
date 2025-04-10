@@ -4,7 +4,7 @@ const passUserObject = async (req, res) => {
     try {
         const userId = req.user.id; 
         const user = await UserModel.findById(userId).select("-password -__v"); 
-        res.json({ user });
+        res.json({ user, message: "Profile info fetched" });
     } catch (err) {
         res.status(500).json({ error: "Failed to get user object", details: err.message });
     }

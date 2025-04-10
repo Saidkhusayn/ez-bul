@@ -544,17 +544,21 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
       <div className="chat-header-inside">
         <div className="chat-header-info">
           <div className="chat-avatar">
-            {receiverAvatar ? (
-              <img 
-                src={receiverAvatar} 
-                alt={`${receiverName}'s avatar`} 
-                className="avatar-image" 
-              />
-            ) : (
-              <div className="avatar-placeholder">
-                {receiverName.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="chat-avatar__container">
+              {receiverAvatar ? (
+                <div className="chat-avatar__image-wrapper">
+                  <img 
+                  src={receiverAvatar} 
+                  alt={`${receiverName}'s avatar`} 
+                  className="avatar-image" 
+                  />
+                </div>
+              ) : (
+                <div className="avatar-placeholder">
+                  {receiverName.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
             {isOnline && <span className="status-indicator online"></span>}
           </div>
           <div className="user-info">

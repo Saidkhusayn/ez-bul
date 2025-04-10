@@ -221,16 +221,21 @@ const ChatsList = () => {
               className="chat-item"
             >
               <div className="chat-avatar">
-                {convo.profilePicture ? (
-                  <img 
-                    src={convo.profilePicture} 
-                    alt={convo.username} 
-                  />
-                ) : (
-                  <div className="avatar-placeholder">
-                    {(convo.name || convo.username).charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="chat-avatar__container">
+                  {convo.profilePicture ? (
+                    <div className="chat-avatar__image-wrapper">
+                      <img 
+                        src={convo.profilePicture} 
+                        alt={convo.username} 
+                      />                     
+                    </div>
+                  ) : (
+                    <div className="avatar-placeholder">
+                      {(convo.name || convo.username).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                
                 {convo.isOnline && (
                   <span className="online-indicator"></span>
                 )}
