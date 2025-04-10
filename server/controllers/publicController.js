@@ -35,7 +35,7 @@ const viewUser = async (req, res) => {
           query = { $or: [{ username: identifier }, { _id: identifier }] };
         }
         
-        const user = await UserModel.findOne(query);
+        const user = await UserModel.findOne(query).select("-password -__v");
         
         if (!user) {
           return res.status(404).json({ error: "User not found" });
