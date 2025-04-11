@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext";
-import { fetchWithAuth } from "../api";
+import { fetchWithAuth } from "../utilities/api";
 import { formatDistanceToNow } from "date-fns";
 import { io } from "socket.io-client";
 const API_URL = import.meta.env.VITE_API_URL;

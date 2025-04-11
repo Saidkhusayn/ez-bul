@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import FormField from "../sub-components/FormField";
 import languages from "../assets/languages.json";
-import { fetchWithAuth } from "../api";
+import { fetchWithAuth } from "../utilities/api";
 const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
 
 interface Option {

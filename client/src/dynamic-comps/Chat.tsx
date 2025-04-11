@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext"; 
 import { io } from "socket.io-client";
-import { fetchWithAuth } from "../api";
+import { fetchWithAuth } from "../utilities/api";
 import { format } from "date-fns";
 import { Check, CheckCheck, CircleCheckBig, Pencil, Trash2, X, Send, Ellipsis } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL;
