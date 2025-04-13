@@ -48,11 +48,9 @@ const Home = () => {
             </form>
           </div>
         </div>
-        <div className="logedin-content">
-          {isLoggedIn && <Sidebar />}
-          {showLogin && <Login />}
-        </div>
       </div>
+      {isLoggedIn && <Sidebar />}
+      {showLogin && <Login />}
     </main>
   );
 };

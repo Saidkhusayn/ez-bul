@@ -16,6 +16,8 @@ interface UIContextType {
   displayChat: (id: string) => void;
   closeChat: () => void;
   displayContacts: () => void;
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
 }
 
 const UIContext = createContext<UIContextType | null>(null);
@@ -25,6 +27,9 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showContacts, setShowContacts] = useState(true);
   const [chat, setChat] = useState<ChatState>({ isVisible: false, selectedReceiver: null });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
   // When a chat is selected, show the chat window and hide contacts.
   const displayChat = (id: string) => {
@@ -61,6 +66,8 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         displayChat,
         closeChat,
         displayContacts,
+        sidebarOpen,
+        toggleSidebar,  
       }}
     >
       {children}

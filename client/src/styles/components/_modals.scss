@@ -1,4 +1,4 @@
-.modal-overlay {
+.login-overlay {
     @include flex-center;
     position: fixed;
     inset: 0;
@@ -7,10 +7,77 @@
     .login-modal {
       @include card($spacer * 1.5);
       width: 400px;
+
+      .login-header{
+        display: flex;
+        padding: $spacer $spacer-md;
+        text-align: center;
+
+        h2{
+          margin: 0;
+          font-weight: $font-weight-bold;
+          flex: 1
+        }
+
+        .close-btn{
+          @extend %icon-btn-base;
+          padding: 0;
+        }
+      }
+
+      .login-terms{
+        padding: $spacer $spacer-md;
+        color: $text-light;
+        text-align: center;
+      }
+
+      .login-options{
+        padding: $spacer $spacer-md;
+        display: flex;
+        flex-direction: column;
+        gap: $spacer-xs;
+
+        .social-login-button{
+          @include button-variant($background-light, $text-dark, 40px);
+          border: $border-base;
   
-      .social-login-button {
-        @include button-variant($white, $text-dark);
-        border: 1px solid $border-color;
+          .icon{
+            margin-right: 8px;
+          }
+        }
+      }
+
+      .login-divider{
+        @include flex-center(row, center, center);
+        padding: 0 $spacer-md;
+        margin: $spacer-xs 0;
+        color: $text-light;
+      }
+
+      .login-form{
+        display: flex;
+        flex-direction: column;
+        gap: $spacer;
+        padding: $spacer $spacer-md $spacer-md;
+
+        .login-error{
+          padding: $spacer-sm;
+          color: $error;
+          background-color: #ffebe9;
+          border-radius: 4px;
+        }
+
+        .login-links{
+          display: flex;
+          flex-direction: column;
+          gap: $spacer;
+          margin-bottom: $spacer;
+        }
+
+        .login-button{
+          @include button-variant($primary, $white, $border-radius-xlg);
+          
+        }
       }
     }
   }

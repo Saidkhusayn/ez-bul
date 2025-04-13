@@ -89,15 +89,13 @@ const Login: React.FC<LoginProps> = ({ isStandalone = false, onLoginSuccess }) =
   }
 
   return (
-    <div className="modal-overlay"> 
-    {//{isStandalone ? "" : "modal-overlay"}
-      }
+    <div className="login-overlay"> 
       <div className="login-modal">
         <div className="login-header">
           <h2>{isRegistering ? "Sign Up" : "Log In"}</h2>
           {!isStandalone && (
             <button 
-              className="close-button" 
+              className="close-btn" 
               onClick={() => setShowLogin(false)}
               aria-label="Close"
             >

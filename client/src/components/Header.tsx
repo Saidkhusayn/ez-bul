@@ -12,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 const Header = () => {
   const { isLoggedIn, userName, logout } = useAuth();
   const { setShowLogin } = useUI();
+  const { toggleSidebar } = useUI();
   const navigate = useNavigate();
   
   // Profile dropdown handling
@@ -113,30 +114,37 @@ const Header = () => {
               </DismissableOverlay> 
           </div>
 
-          <div className="chat-icon">
-            <button className="icon-btn">
-              < MessageCircleMore strokeWidth={1.7}/>
-            </button>
-          </div>
 
-          <div className="auth-controls">
-            {!isLoggedIn && (
-              <button className="black-btn" onClick={() => setShowLogin(true)}>
+
+          <div className="user-icons">
+            {!isLoggedIn ? (
+              <button className="sign-btn" onClick={() => setShowLogin(true)}>
                 Log in
               </button>
-            )}
+            ) : (
+              <>
+                <div className="chat-icon">
+                  <button className="icon-btn">
+                    < MessageCircleMore 
+                      strokeWidth={1.7}
+                      onClick={toggleSidebar}
+                    />
+                  </button>
+                </div>
 
-            <button
-              className="profile-btn"
-              ref={profileDisclosure.triggerRef}
-              onClick={profileDisclosure.onToggle}
-              aria-expanded={profileDisclosure.isOpen}
-            >
-              <CircleUserRound strokeWidth={1.7}/>
-              <span className="profile-name">
-                {isLoggedIn ? userName : "Guest"}
-              </span>
-            </button>
+                  <button
+                  className="profile-btn"
+                  ref={profileDisclosure.triggerRef}
+                  onClick={profileDisclosure.onToggle}
+                  aria-expanded={profileDisclosure.isOpen}
+                >
+                  <CircleUserRound strokeWidth={1.7}/>
+                  <span className="profile-name">
+                    {userName}
+                  </span>
+                </button>
+              </>
+            )}
 
             <DismissableOverlay
               isOpen={profileDisclosure.isOpen}

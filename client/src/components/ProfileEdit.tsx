@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import FormField from "../sub-components/FormField";
 import languages from "../assets/languages.json";
 import { fetchWithAuth } from "../utilities/api";
+import { Camera } from "lucide-react"
 const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
 
 interface Option {
@@ -413,20 +414,35 @@ const ProfileEdit: React.FC = () => {
   return (
     <div className="profile-page">
       {/* Header Section */}
-      <div className="profile-header text-center text-white">
-        <div className="profile-picture-container position-relative">
-          <img
-            src={profile.profilePicture || "https://via.placeholder.com/150"}
-            alt="Profile"
-            className="profile-picture rounded-circle border"
-            style={{ width: "120px", height: "120px", objectFit: "cover", cursor: "pointer" }}
-            onClick={handlePictureClick}
-          />
-          <div className="position-absolute bottom-0 end-0">
-            <span className="badge bg-primary rounded-circle p-2" style={{ cursor: "pointer" }} onClick={handlePictureClick}>
-              <i className="bi bi-camera"></i>
-            </span>
+      <div className="profile-header">
+        <div className="user-info-main">
+          <div className="chat-avatar position-relative">
+            {profile.profilePicture ? (
+              <>
+                <img
+                src={profile.profilePicture}
+                alt="Profile"
+                className="rounded-circle border"
+                onClick={handlePictureClick}
+                onError={(e) => {
+                //@ts-ignore
+                e.target.src = "https://via.placeholder.com/120";
+                }}
+                />
+                <div 
+                className="overlay"
+                onClick={handlePictureClick}
+                >
+                  <i className="icon">< Camera /></i>
+                </div>
+              </>
+            ) : (
+            <div className="avatar-placeholder">
+              {(profile.name || profile.username).charAt(0).toUpperCase()}
+            </div>
+            )}
           </div>
+
           <input 
             type="file" 
             style={{ display: "none" }}
@@ -434,10 +450,11 @@ const ProfileEdit: React.FC = () => {
             ref={fileInputRef}
             onChange={handleFileChange}
           />
+
+          <h4 className="mt-2 fw-bold">{profile.name || "Name not set"}</h4>
+          <p className="text">@{profile.username}</p>
+          <p className="text">{profile.bio || "No bio available"}</p>
         </div>
-        <h2 className="mt-3">{profile.name || "Your Name"}</h2>
-        <p className="text">@{profile.username}</p>
-        <p className="text">Type: {profile.type || "Not set"}</p>
       </div>
 
       {/* Save Status Alert */}

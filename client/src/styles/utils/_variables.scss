@@ -27,6 +27,7 @@ $border-radius-xs: 4px;
 $border-radius-sm: 8px;
 $border-radius-md: 16px;
 $border-radius-lg: 32px;
+$border-radius-xlg: 40px;
 
 // Shadows
 $shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -44,4 +45,4 @@ $font-weight-normal: 500;
 $font-weight-bold: 600;
 $font-weight-xbold: 800;
 
-$border-base: 1px solid #eaeaea;
+$border-base: 1px solid $border-color;

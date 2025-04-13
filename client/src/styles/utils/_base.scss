@@ -6,6 +6,10 @@ body {
   line-height: 1.6;
   color: $text-dark;
   box-sizing: border-box;
+
+  a{
+    text-decoration: none;
+  }
 }
 
 .empty-chats, .no-chat-selected, .loading, .chat-error, .no-messages{

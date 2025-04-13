@@ -68,29 +68,43 @@
 
                 .search-dropdown{
                     @extend %dropdown;
-
-                }
-            }
-
-            .chat-icon{
-                .icon-btn{
-                    @extend %icon-btn-base;
+                    min-width: 200px;
+                    left: $spacer-xs;
                 }
             }
             
-            .auth-controls{
+            .user-icons{
+                display: flex;
+                align-items: center;
+                position: relative;   
+
+                .chat-icon{
+                    .icon-btn{
+                        @extend %icon-btn-base;
+                    }
+                }
 
                 .profile-btn{
-                    @extend %icon-btn-base;   
-                    padding: $spacer*0.25 $spacer-sm;
+                    @extend %icon-btn-base;
+                    margin: 0 $spacer-sm;
 
                     .profile-name{
                         margin-left: $spacer * 0.25;
                     }
                 }
 
+                .sign-btn{
+                    @include button-variant($black, $white);
+
+                    &:hover{
+                        opacity: 0.8;
+                      }
+                }
+
                 .profile-dropdown{
                     @extend %dropdown;
+                    top: $spacer-md;
+                    right: -$spacer-sm;
                 }
             }
         }

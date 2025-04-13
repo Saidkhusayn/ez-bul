@@ -8,8 +8,7 @@ const Profile = () => {
   const { username } = useParams();
   const navigate = useNavigate();
   const { userName } = useAuth();
-  const { displayChat } = useUI();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { displayChat, sidebarOpen, toggleSidebar } = useUI();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -76,7 +75,7 @@ const Profile = () => {
     if (userName === profile.username) {
       navigate("/profile/edit");
     } else {
-      setIsSidebarOpen(true);
+      toggleSidebar();
       displayChat(profile._id);
     }
   };
@@ -117,18 +116,23 @@ const Profile = () => {
     <>
       <div className="profile-header text-center text-white">
         {/* Profile Header */}
-        <div className="d-flex flex-column align-items-center">
-          <div className="position-relative">
-            <img
-              src={profile.profilePicture || "https://via.placeholder.com/120"}
+        <div className="user-info-main">
+          <div className="chat-avatar ">
+            {profile.profilePicture ? (
+              <img
+              src={profile.profilePicture}
               alt="Profile"
               className="rounded-circle border"
-              style={{ width: "120px", height: "120px", objectFit: "cover" }}
               onError={(e) => {
                 //@ts-ignore
                 e.target.src = "https://via.placeholder.com/120";
               }}
-            />
+            />        
+            ) : (
+            <div className="avatar-placeholder">
+              {(profile.name || profile.username).charAt(0).toUpperCase()}
+            </div>
+            )}
           </div>
           <h4 className="mt-2 fw-bold">{profile.name || "Name not set"}</h4>
           <p className="text">@{profile.username}</p>
@@ -154,7 +158,7 @@ const Profile = () => {
         </button>
       </div>
       
-      {isSidebarOpen && <Sidebar />}
+      {sidebarOpen && <Sidebar />}
     </>
   );
 };
