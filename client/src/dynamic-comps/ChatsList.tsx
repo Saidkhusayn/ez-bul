@@ -1,9 +1,10 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext";
 import { fetchWithAuth } from "../utilities/api";
 import { formatDistanceToNow } from "date-fns";
 import { io } from "socket.io-client";
+import { Inbox } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -73,9 +74,6 @@ const ChatsList = () => {
   
   useEffect(() => {
     fetchConversations();
-    
-    const intervalId = setInterval(fetchConversations, 30000); 
-    return () => clearInterval(intervalId);
   }, [onlineUsers]);
   
   // Socket event listeners for real-time updates
@@ -182,9 +180,9 @@ const ChatsList = () => {
   // Format timestamp to relative time (e.g., "2 hours ago")
   const formatTime = (timestamp: string) => {
     try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+      return formatDistanceToNow(new Date(timestamp));
     } catch (e) {
-      return "...";
+      return '...';
     }
   };
   
@@ -209,7 +207,7 @@ const ChatsList = () => {
         </div>
       ) : conversations.length === 0 ? (
         <div className="empty-chats">
-          <div className="empty-state-icon">📭</div>
+         <div className="empty-state-icon"> < Inbox size={45} strokeWidth={1.2} /> </div>
           <p>No chats yet</p>
         </div>
       ) : (
@@ -218,26 +216,23 @@ const ChatsList = () => {
             <li 
               key={convo.userId}
               onClick={() => displayChat(convo.userId)}
-              className="chat-item"
+              className="chat-item position-relative"
             >
               <div className="chat-avatar">
-                <div className="chat-avatar__container">
-                  {convo.profilePicture ? (
-                    <div className="chat-avatar__image-wrapper">
+               
+                  {convo.profilePicture ? (     
                       <img 
                         src={convo.profilePicture} 
                         alt={convo.username} 
                       />                     
-                    </div>
                   ) : (
                     <div className="avatar-placeholder">
                       {(convo.name || convo.username).charAt(0).toUpperCase()}
                     </div>
                   )}
-                </div>
                 
                 {convo.isOnline && (
-                  <span className="online-indicator"></span>
+                  <span className="status-indicator online"></span>
                 )}
               </div>
               

@@ -1,0 +1,12 @@
+@import './utils/variables';
+@import './utils/mixins';
+@import './utils/base';
+
+@import './pages/home';
+@import './pages/profile.scss';
+
+@import './components/header';
+@import './components/sidebar';
+@import './components/chat';
+@import './components/modals';
+

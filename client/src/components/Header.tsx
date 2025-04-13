@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useDisclosure } from "../utilities/useDisclosure";
 import { useAuth } from "../contexts/AuthContext";
 import { useUI } from "../contexts/UIContext";
 import { useNavigate } from "react-router-dom";
 import DismissableOverlay from '../sub-components/DismissableOverlay';
+import { useDisclosure } from "../utilities/useDisclosure";
 import { useDebounce } from "../utilities/useDebounce";
 import { MessageCircleMore, CircleUserRound, Search } from 'lucide-react';
 
@@ -78,9 +78,11 @@ const Header = () => {
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => users.length > 0 && searchDisclosure.onOpen()}
+                onFocus={searchDisclosure.onOpen}
                 placeholder="Search People"
                 aria-label="Search"
+                //@ts-ignore
+                ref={searchDisclosure.triggerRef}
               />
 
               <button 
@@ -94,13 +96,13 @@ const Header = () => {
               <DismissableOverlay
                 isOpen={searchDisclosure.isOpen}
                 onClose={searchDisclosure.onClose}
-                className="search-results"
+                className="search-dropdown"
               >
-                <ul className="results-list">
-                  {loading && <li className="result-item">Loading...</li>}
+                <ul className="dropdown-list">
+                  {loading && <li className="dropdown-item">Loading...</li>}
                   {users.map((user) => (
                     <li
-                      className="result-item"
+                      className="dropdown-item"
                       key={user._id}
                       onClick={() => handleSearchItemClick(user.username)}
                     >

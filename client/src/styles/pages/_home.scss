@@ -1,0 +1,77 @@
+.main-content {
+    background-color: $primary-light;
+    height: 100vh;
+    width: 100%;
+
+    .hero-section{
+        @include flex-center(column);
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 80px 20px;
+
+        .hero-content{
+            max-width: 800px;
+
+            .hero-title{
+                font-size: 70px;
+                font-weight: $font-weight-xbold;
+                margin-bottom: $spacer-lg;
+                line-height: 1.1;
+                text-align: center;
+
+                .title-highlight {
+                    padding: 0 $spacer-sm;
+                    background-color: $white;
+                    display: inline-block;
+                    line-height: 1.2;
+                }
+            }
+
+            .hero-description{
+                font-size: $font-size-md;
+                font-weight: $font-weight-sm;
+                color: #333;
+                line-height: 1.6;
+                margin-bottom: 40px;
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-search{
+                display: flex;
+                justify-content: center;
+                margin-top: 30px;
+
+                .search-form-hero{
+                    position: relative;
+                    width: 100%;
+                    max-width: 500px;
+
+                    .search-input-hero{
+                        @include input-card(15px 20px, $border-radius-lg);
+                        width: 100%;
+                        padding-right: 50px;
+                        font-size: 16px;
+                        background-color: $white;
+                        transition: all 0.3s;
+                        
+                        &:focus{
+                            box-shadow: $shadow-lg;
+                        }
+                    }
+
+                    .search-btn-hero{
+                        @extend %icon-btn-base;
+                        position: absolute;
+                        right: 20px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        color: $text-light;
+                    }
+                }
+            }
+        }
+    }
+  }
+  

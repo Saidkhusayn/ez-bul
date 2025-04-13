@@ -1,0 +1,99 @@
+.site-header {
+    background-color: $white;
+    padding: $spacer-sm 0;
+    box-shadow: $shadow-sm;
+  
+    .header-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 $spacer;
+        @include flex-center(row);
+        justify-content: space-between;
+
+        .logo{
+            font-size: 32px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .nav-menu{
+            flex-grow: 1;
+            margin-left: 40px;
+
+            .nav-list{
+                @extend %list-base;
+                display: flex;
+
+                .nav-item{
+                    margin-right: $spacer * 1.875;
+                    font-size: $font-size-base + 1;
+                    font-weight: $font-weight-normal;
+                    padding: $spacer-xs 0;
+                    cursor: pointer;
+                    transition: ease-in-out 0.3s;
+
+                    &:hover{
+                        opacity: 0.5;
+                    }
+                }
+            }
+        }
+
+        .header-right{
+            @include flex-center; /* Add gap space later transition*/
+
+            .search-form{
+                position: relative;
+                margin-right: 15px;
+                
+                .search-input{
+                    @include input-card($spacer-xs $spacer-sm, $border-radius: $border-radius-lg);
+                    width: 180px;
+                    padding-right: 40px;
+                    transition: all 0.3s;
+                
+                    &:focus {
+                      width: 220px;
+                    }
+                }
+
+                .search-btn{
+                    @extend %icon-btn-base;
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: $text-light;  
+                }
+
+                .search-dropdown{
+                    @extend %dropdown;
+
+                }
+            }
+
+            .chat-icon{
+                .icon-btn{
+                    @extend %icon-btn-base;
+                }
+            }
+            
+            .auth-controls{
+
+                .profile-btn{
+                    @extend %icon-btn-base;   
+                    padding: $spacer*0.25 $spacer-sm;
+
+                    .profile-name{
+                        margin-left: $spacer * 0.25;
+                    }
+                }
+
+                .profile-dropdown{
+                    @extend %dropdown;
+                }
+            }
+        }
+
+    }
+  }

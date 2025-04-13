@@ -1,0 +1,40 @@
+.sidebar-container {
+    @include card(0, $border-radius-sm);
+    background-color: $white;
+    position: fixed;
+    bottom: $spacer * 2.1875; // 35px
+    left: $spacer-xs;
+    width: 440px;
+    height: 85vh;
+    transform: translateX(-450px);
+    transition: transform 0.3s ease-in-out;
+  
+    &.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-toggle{
+        position: fixed; 
+        bottom: 50%; 
+        right: -18%; 
+        background: $primary;
+        color: $white;
+        border: none;
+        padding: $spacer-xs $spacer-md;
+        cursor: pointer;
+        border-radius: $border-radius-sm;
+        transform: translateY(50%);
+        transition: background 0.2s, left 0.3s ease-in-out;
+        font-size: 16px;
+        box-shadow: $shadow-sm;
+    }
+
+    .sidebar-content {
+        padding: 0;
+        overflow-y: auto;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+  }

@@ -1,0 +1,85 @@
+/* General Layout */
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  font-weight: $font-weight-sm;
+  line-height: 1.6;
+  color: $text-dark;
+  box-sizing: border-box;
+}
+
+.empty-chats, .no-chat-selected, .loading, .chat-error, .no-messages{
+  @include flex-center(column);
+  height: 100%;
+  padding: $spacer-md - 4;
+  text-align: center;
+  color: $text-light;
+
+  div {
+    margin-bottom: $spacer;
+  }
+
+  p{
+    margin-bottom: $spacer-xs;
+    font-size: $font-size-base + 2;
+  }
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid $primary;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+.retry-btn {
+  @include button-variant($primary, $white, $spacer *0.25);
+}
+
+
+/*Base Classes */
+
+%list-base {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+%span-light{
+  font-size: $font-size-sm;
+  font-weight: $font-weight-sm;
+  color: $text-light;
+}
+
+%icon-btn-base{
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+%dropdown{
+  @include overlay;
+  min-width: 100px;
+
+  .dropdown-list{
+      @extend %list-base;
+
+      .dropdown-item {
+          padding: 5px 10px;
+          cursor: pointer;
+          transition: background 0.2s;
+
+          &:hover{
+              background-color: $background-light;  
+          }
+        }
+  }
+}

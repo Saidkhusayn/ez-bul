@@ -14,7 +14,7 @@ const DismissableOverlay = forwardRef<HTMLDivElement, DismissableOverlayProps>(
     return (
       <div 
         ref={ref}
-        className={`profile-dropdown ${className}`}
+        className={`${className}`}
         role="menu"
         aria-hidden={!isOpen}
       >

@@ -3,8 +3,10 @@ import { useUI } from "../contexts/UIContext";
 import { useAuth } from "../contexts/AuthContext"; 
 import { io } from "socket.io-client";
 import { fetchWithAuth } from "../utilities/api";
+import DismissableOverlay from '../sub-components/DismissableOverlay';
+import { useDisclosure } from "../utilities/useDisclosure";
 import { format } from "date-fns";
-import { Check, CheckCheck, CircleCheckBig, Pencil, Trash2, X, Send, Ellipsis } from 'lucide-react';
+import { Check, CheckCheck, CircleCheckBig, Pencil, Trash2, Send, Ellipsis, X, MailOpen } from 'lucide-react';
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Message {
@@ -44,13 +46,15 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const [receiverAvatar, setReceiverAvatar] = useState("");
   //const [lastSeen, setLastSeen] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true); //setLoading
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false); //taste if it is working and how
   const [receiverIsTyping, setReceiverIsTyping] = useState(false);
-  const [showActions, setShowActions] = useState<boolean>(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0); //fix this or implement this in chatLists
+
+  const messageActionsDisclosure = useDisclosure();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -415,9 +419,9 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
       } else if (date.toDateString() === yesterday.toDateString()) {
         return "Yesterday";
       } else if (date.getFullYear() === today.getFullYear()) {
-        return format(date, "MMM d"); 
+        return format(date, "MMMM d"); 
       } else {
-        return format(date, "MMM d, yyy"); 
+        return format(date, "MMMM d, yyy"); 
       }
     } catch (error) {
       return "Unknown Date";
@@ -427,7 +431,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const formatMessageTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
-      return format(date, "HH:mm"); // Example: 15:41
+      return format(date, "HH:mm");
     } catch (error) {
       return "Just now";
     }
@@ -481,43 +485,77 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
         <React.Fragment key={message._id}>
           {showDateHeader && (
             <div className="date-header">
-              <div className="date-divider">
-                <span className="date-text small">{formatMessageDate(message.timestamp)}</span>
-              </div>
+              <span className="date-text small">{formatMessageDate(message.timestamp)}</span>
             </div>
           )}
           <div 
             className={`message ${message.isSender ? 'message-sent' : 'message-received'}`}
           >
-            <div className="message-bubble position-relative">
+            <div 
+            className="message-bubble position-relative"
+            >
               <p className="message-text">{message.text}</p>
-              <div>
-                <div>
+              <div className="right-side">
+                <div className="ellipsis-icon">
                   <span className="ellipsis-icon d-flex justify-content-end">
-                    <Ellipsis size={15} onClick={
-                      () => {setShowActions(true)} //make reusable function to make the box disappear when the outside of it is clicked
-                    }/>
+                    <Ellipsis 
+                      size={15} 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (activeMessageId === message._id) {
+                          messageActionsDisclosure.onClose();
+                          setActiveMessageId(null);
+                        } else {
+                          setActiveMessageId(message._id);
+                          messageActionsDisclosure.onOpen();
+                        }
+                      }}
+                      //@ts-ignore
+                      ref={messageActionsDisclosure.triggerRef}
+                    />
                   </span>               
                 </div>
-                {showActions && message.isSender && (
-                  <ul className="dropdown-list">
-                    <li 
-                      className="dropdown-item" 
-                      onClick={() => handleEdit(message._id, message.text)}
-                      aria-label="Edit message"
-                    >
-                      <Pencil size={13} />
-                    </li>
-                    <li 
-                      className="dropdown-item" 
-                      onClick={() => handleDelete(message._id)}
-                      aria-label="Delete message"
-                    >
-                      <Trash2 size={13}/>
-                    </li>
-                  </ul>
+                {activeMessageId === message._id && message.isSender && (
+                  <DismissableOverlay
+                    isOpen={messageActionsDisclosure.isOpen}
+                    onClose={() => {
+                      messageActionsDisclosure.onClose();
+                      setActiveMessageId(null);
+                    }}
+                    className="message-actions"
+                    ref={messageActionsDisclosure.overlayRef}
+                  >
+                    <ul className="dropdown-list">
+                      <li 
+                        className="dropdown-item" 
+                        onClick={() => {
+                          handleEdit(message._id, message.text);
+                          messageActionsDisclosure.onClose();
+                        }}
+                        aria-label="Edit message"
+                      > 
+                        <div>
+                          <p>Edit</p>
+                          <Pencil size={15} />
+                        </div>
+                      </li>
+                      <li 
+                        className="dropdown-item" 
+                        onClick={() => {
+                          handleDelete(message._id);
+                          messageActionsDisclosure.onClose();
+                        }}
+                        aria-label="Delete message"
+                      >
+                        <div>
+                          <p>Delete</p>
+                          <Trash2 size={15} />
+                        </div>
+                      </li>
+                    </ul>
+                  </DismissableOverlay>
                 )}
-                <div>
+                <div className="message-status">
                   <div className="message-info d-flex align-items-end justify-content-end gap-1">
                     {message.edited && <span className="message-span">edited</span>}
                     <span className="message-span">
@@ -540,35 +578,46 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
 
   return (
     <div className="chat-container">
-      {/* Chat header */}
+      {/* Chat header date*/}
       <div className="chat-header-inside">
-        <div className="chat-header-info">
-          <div className="chat-avatar">
-            <div className="chat-avatar__container">
+        <div className="chat-header-info position-relative">
+          <div className="chat-avatar ">
               {receiverAvatar ? (
-                <div className="chat-avatar__image-wrapper">
                   <img 
                   src={receiverAvatar} 
                   alt={`${receiverName}'s avatar`} 
-                  className="avatar-image" 
+                  className="avatar-image rounded-circle border" 
                   />
-                </div>
               ) : (
                 <div className="avatar-placeholder">
                   {receiverName.charAt(0).toUpperCase()}
                 </div>
               )}
-            </div>
-            {isOnline && <span className="status-indicator online"></span>}
+           
           </div>
           <div className="user-info">
             <h5>{receiverName}</h5>
-            {isOnline && <span className="status-text">Online</span>}
+            {isOnline ? (   
+              <div className="status-text online">
+                {receiverIsTyping ? (
+                  <div className="typing-indicator">
+                    <span className="label">Typing</span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </div>
+                ) : (
+                  "Online"
+                )}
+              </div>
+            ) : (
+              <div className="status-text away">Away</div>
+            )}
           </div>
         </div>
         <div className="chat-header-actions">
           <button className="chat-close-btn" onClick={closeChat}>
-            <span>×</span>
+            <span> <X size={19} /> </span>
           </button>
         </div>
       </div>
@@ -576,7 +625,7 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
       {/* Messages area */}
       <div className="chat-messages">
         {loading && (
-          <div className="chat-loading">
+          <div className="loading">
             <div className="loading-spinner"></div>
             <p>Loading messages...</p>
           </div>
@@ -596,7 +645,7 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
         
         {!loading && !error && messages.length === 0 && (
           <div className="no-messages">
-            <div className="empty-state-icon">📨</div>
+            <div className="empty-state-icon"> <MailOpen size={35} strokeWidth={1.3}/></div>
             <p>No messages yet. Start the conversation!</p>
           </div>
         )}
@@ -605,16 +654,7 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
           <div className="messages-container">
             {renderMessagesWithDateHeaders()}
             
-            {/* Typing indicator */}
-            {receiverIsTyping && (
-              <div className="typing-indicator">
-                <div className="typing-bubble">
-                  <span className="typing-dot">.</span>
-                  <span className="typing-dot">.</span>
-                  <span className="typing-dot">.</span>
-                </div>
-              </div>
-            )}
+
           
             <div ref={messagesEndRef}/>
           </div>
@@ -660,7 +700,7 @@ const MessageStatusIcon = React.memo(({ status }: { status?: string }) => {
                 required
               />
               <button type="submit" className="send-button">
-                <Send />
+                <Send width={35}/>
               </button>
             </div>
           </form>
