@@ -62,4 +62,19 @@ const editProfile = async (req, res) => {
     }
 };  
 
-module.exports = { passUserObject, uploadProfilePicture, editProfile };
+const getAllHosts = async (req, res) => {
+  try {
+    const hosts = await UserModel.find({ open: 'Yes' }).select("-password -__v");
+    res.json(hosts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get hosts", details: err.message });
+  }
+};
+
+// Update the module exports
+module.exports = { 
+  passUserObject, 
+  uploadProfilePicture, 
+  editProfile, 
+  getAllHosts 
+};

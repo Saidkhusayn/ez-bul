@@ -1,7 +1,7 @@
 // Sidebar.tsx
 import React, {  } from "react";
-import ChatsList from "../dynamic-comps/ChatsList";
-import Chat from "../dynamic-comps/Chat";
+import ChatsList from "./ChatsListing";
+import Chat from "./Chat";
 import { useUI } from "../contexts/UIContext";
 
 const Sidebar: React.FC = () => {

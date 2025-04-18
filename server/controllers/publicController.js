@@ -1,4 +1,5 @@
 const UserModel = require("../models/Users");
+const axios = require('axios');
 
 const searchUsers = async(req, res) => {
     try{
@@ -50,5 +51,44 @@ const viewUser = async (req, res) => {
       }
   };
 
+  // Add this function to your existing publicController.js
+const searchLocations = async (req, res) => {
+  try {
+    const query = req.query.query;
+    if (!query) return res.json([]);
+    
+    // Use geonames API to search for locations
+    const response = await axios.get('http://api.geonames.org/searchJSON', {
+      params: {
+        q: query,
+        maxRows: 10,
+        username: 'javabek', // Using your username as requested
+        featureClass: 'P', // Populated places
+        style: 'short'
+      }
+    });
+    
+    const locations = response.data.geonames.map(location => ({
+      id: location.geonameId,
+      value: location.geonameId.toString(),
+      label: `${location.name}${location.adminName1 ? ', ' + location.adminName1 : ''}${location.countryName ? ', ' + location.countryName : ''}`,
+      name: location.name,
+      country: {
+        value: location.countryCode,
+        label: location.countryName
+      },
+      province: {
+        value: location.adminCode1 || '',
+        label: location.adminName1 || ''
+      }
+    }));
+    
+    res.json(locations);
+  } catch (err) {
+    console.error('Location search error:', err);
+    res.status(500).json({ message: "Location Search Failed" });
+  }
+};
 
-module.exports = { searchUsers, viewUser }
+
+module.exports = { searchUsers, viewUser, searchLocations }

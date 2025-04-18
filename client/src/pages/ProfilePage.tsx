@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useUI } from "../contexts/UIContext";
-import Sidebar from "./Sidebar";
+import Sidebar from "../components/Sidebar";
 
 const Profile = () => {
   const { username } = useParams();

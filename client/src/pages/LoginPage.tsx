@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import Login from "./Login";
+import Login from "../components/LoginBox";
 
 const LoginPage = () => {
   const { isLoggedIn } = useAuth();
