@@ -1,29 +1,28 @@
-import { useState } from 'react';
-import Sidebar from "../components/Sidebar";
-import Login from "../components/LoginBox";
-import LocationSearch from '../sub-components/LocationSearch';
-import { useUI } from "../contexts/UIContext";
-import { useAuth } from "../contexts/AuthContext";
-
-interface Location {
-  id: string;
-  value: string;
-  label: string;
-  name: string;
-  country: { value: string; label: string };
-  province: { value: string; label: string };
-}
+import SearchInput from '../sub-components/SearchInput';
+import { useUI } from '../contexts/UIContext';
+import { useAuth } from '../contexts/AuthContext';
+import Sidebar from '../components/Sidebar';
+import Login from '../components/LoginBox';
+import { useNavigate } from 'react-router-dom';
+import { SearchResult } from '../sub-components/SearchInput';
 
 const Home = () => {
   const { showLogin } = useUI();
   const { isLoggedIn } = useAuth();
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const navigate = useNavigate();
 
-  const handleLocationSelect = (location: Location) => {
-    setSelectedLocation(location);
-    // You could redirect to hosts listing with this location as a parameter
-    // or update state in a parent component
-    console.log('Selected location:', location);
+  const transformLocation = (data: any) => 
+    data.map((location: any) => ({
+      id: location.id,
+      value: location.value,
+      label: location.label,
+      name: location.name,
+      country: location.country,
+      province: location.province
+    }));
+  
+  const handleSearchSelect = (result: SearchResult) => {
+    navigate(`/search/${result.label}`); 
   };
 
   return (
@@ -36,13 +35,17 @@ const Home = () => {
           </h1>
           <p className="hero-description">
             Deel helps tens of thousands of companies expand globally with unmatched speed,
-            flexibility and compliance. Get our all-in-one Global People Platform that simplifies
-            the way you onboard, offboard, and everything else in between.
+            flexibility and compliance.
           </p>
           <div className="hero-search">
-            <form className="search-form-hero" onSubmit={(e) => e.preventDefault()}>
-              <LocationSearch onLocationSelect={handleLocationSelect} />
-            </form>
+            <SearchInput
+              onSelect={handleSearchSelect}
+              endpoint="/search/locations"
+              placeholder="Search Locations..."
+              historyKey="locationSearchHistory"
+              searchType="locations"
+              transformData={transformLocation}
+            />
           </div>
         </div>
       </div>

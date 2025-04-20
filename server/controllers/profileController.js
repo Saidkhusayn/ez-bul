@@ -71,6 +71,8 @@ const getAllHosts = async (req, res) => {
   }
 };
 
+
+
 // Update the module exports
 module.exports = { 
   passUserObject, 

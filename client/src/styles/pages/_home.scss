@@ -43,12 +43,12 @@
                 justify-content: center;
                 margin-top: 30px;
 
-                .search-form-hero{
+                .search-form{
                     position: relative;
                     width: 100%;
-                    max-width: 500px;
+                    max-width: 700px;
 
-                    .search-input-hero{
+                    .search-input{
                         @include input-card(15px 20px, $border-radius-lg);
                         width: 100%;
                         padding-right: 50px;
@@ -61,13 +61,27 @@
                         }
                     }
 
-                    .search-btn-hero{
+                    .search-btn{
                         @extend %icon-btn-base;
                         position: absolute;
                         right: 20px;
                         top: 50%;
                         transform: translateY(-50%);
                         color: $text-light;
+                    }
+
+                    .search-dropdown{
+                        @extend %dropdown;
+                        min-width: 650px;
+                        left: 3%;
+                        font-size: 16px;
+                        padding: 10px 20px;
+
+                        .history-item{
+                           svg{
+                            margin-right: 8px;
+                           }
+                        }
                     }
                 }
             }

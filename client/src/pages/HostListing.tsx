@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchWithAuth } from "../utilities/api";
-import LocationSearch from '../sub-components/LocationSearch';
+import LocationSearch from '../sub-components/SearchInput';
 
 interface Location {
   id: string;
@@ -209,7 +209,14 @@ const HostListing: React.FC = () => {
 
           <div className="filter-group">
             <label className="filter-label">Location</label>
-            <LocationSearch onLocationSelect={handleLocationSelect} />
+            <LocationSearch 
+              //onLocationSelect={handleLocationSelect}
+              endpoint="/search/locations"
+              placeholder="Search cities..."
+              historyKey="citySearchHistory"
+              //@ts-ignore
+              transformData={(data) => data.cities.map(transformCity)}
+            />
           </div>
 
           <div className="filter-group">

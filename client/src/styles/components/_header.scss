@@ -68,8 +68,15 @@
 
                 .search-dropdown{
                     @extend %dropdown;
+                    padding: 5px 10px;
                     min-width: 200px;
                     left: $spacer-xs;
+
+                    .history-item{
+                        svg{
+                         margin-right: 4px;
+                        }
+                    }
                 }
             }
             
@@ -103,6 +110,7 @@
 
                 .profile-dropdown{
                     @extend %dropdown;
+                    padding: 5px 10px;
                     top: $spacer-md;
                     right: -$spacer-sm;
                 }
