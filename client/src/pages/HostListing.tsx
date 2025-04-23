@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchWithAuth } from "../utilities/api";
-import LocationSearch from '../sub-components/SearchInput';
+import AdvancedLocationSearch from '../sub-components/AdvancedLocationSearch';
+import Select from 'react-select';
+import languages from "../assets/languages.json";
+
+// Language options for multi-select dropdown
+const languageOptions = languages.map((lang) => ({
+  value: lang.code,
+  label: lang.name,
+}));
+
+interface LocationOption {
+  value: string;
+  label: string;
+}
 
 interface Location {
   id: string;
@@ -15,13 +28,15 @@ interface Location {
 interface Host {
   id: string;
   name: string;
+  profilePicture: string;
   type: 'Volunteer' | 'Paid';
+  rate: number;
   responseTime: string;
   references: number;
   friends: number;
   languages: { value: string; label: string }[];
   open: 'Yes' | 'No';
-  description: string;
+  bio: string;
   country?: { value: string; label: string };
   province?: { value: string; label: string };
   city?: { value: string; label: string };
@@ -34,25 +49,26 @@ interface HostCardProps {
 const HostCard: React.FC<HostCardProps> = ({ host }) => (
   <div className="host-card">
     <div className="host-header">
-      <div className="host-avatar">
-        <div className="avatar-placeholder">{host.name[0]}</div>
-        <div className={`status-indicator ${host.open === 'Yes' ? 'online' : ''}`} />
+      <div className="host-avatar">      
+        {host.profilePicture ? (     
+            <img 
+              src={host.profilePicture} 
+              alt={host.name} 
+            />                     
+        ) : (
+          <div className="avatar-placeholder">
+            {(host.name || host.name).charAt(0).toUpperCase()}
+          </div>
+        )}
       </div>
       <div className="host-info">
         <h3 className="host-name">{host.name}</h3>
-        <span className="response-time">{host.responseTime || 'No response time data'}</span>
+        <span className="response-time">{host.type === "Paid" ? ("$" + host.rate + " p/h") : (host.type) }</span>
       </div>
     </div>
     
     <div className="host-stats">
-      <div className="stat-item">
-        <span className="stat-label">References:</span>
-        <span className="stat-value">{host.references || 0}</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-label">Friends:</span>
-        <span className="stat-value">{host.friends || 0}</span>
-      </div>
+     
       <div className="stat-item">
         <span className="stat-label">Speaks:</span>
         <span className="stat-value">
@@ -73,7 +89,7 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
       )}
     </div>
 
-    <p className="host-description">{host.description || 'No description available'}</p>
+    <p className="host-description">{host.bio || 'No description available'}</p>
     
     {host.open === 'Yes' && (
       <button className="status-badge accepting">Accepting Guests</button>
@@ -83,13 +99,29 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
 
 const HostListing: React.FC = () => {
   const routeLocation = useLocation();
-  const [selectedType, setSelectedType] = useState<'Volunteer' | 'Paid' | 'all'>('all');
+  const [hostType, setHostType] = useState<'Volunteer' | 'Paid' | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [travelerCount, setTravelerCount] = useState('Any');
+  const [selectedLanguages, setSelectedLanguages] = useState<LocationOption[]>([]);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filteredHosts, setFilteredHosts] = useState<Host[]>([]);
   
+  // Store filters that will be applied when the user clicks "Apply Filters"
+  const [pendingLocationFilter, setPendingLocationFilter] = useState<{
+    country: string;
+    province: string;
+    city: string;
+  }>({ country: '', province: '', city: '' });
+  
+  // Active filters (applied to the backend)
+  const [activeFilters, setActiveFilters] = useState({
+    country: '',
+    province: '',
+    city: '',
+    languages: [] as string[],
+    type: '' as 'Volunteer' | 'Paid' | ''
+  });
+
   // Parse query params from URL on component mount
   useEffect(() => {
     const params = new URLSearchParams(routeLocation.search);
@@ -99,7 +131,7 @@ const HostListing: React.FC = () => {
     const province = params.get('province');
     
     if (locationId && locationName && country) {
-      setSelectedLocation({
+      const locationObj = {
         id: locationId,
         value: locationId,
         label: locationName,
@@ -112,68 +144,172 @@ const HostListing: React.FC = () => {
           value: province?.split(':')[0] || '', 
           label: province?.split(':')[1] || '' 
         }
+      };
+      
+      setSelectedLocation(locationObj);
+      
+      // Set the pending location filter
+      setPendingLocationFilter({
+        country: locationObj.country.value,
+        province: locationObj.province?.value || '',
+        city: ''
       });
     }
+    
+    // Initial fetch of all open hosts
+    fetchHosts({
+      country: '',
+      province: '',
+      city: '',
+      languages: [],
+      type: ''
+    });
   }, [routeLocation]);
 
-  // Fetch hosts
-  useEffect(() => {
-    const fetchHosts = async () => {
-      setIsLoading(true);
-      try {
-        // We'll fetch all users and filter them locally
-        const response = await fetchWithAuth('/profile/hosts');
-        if (response && Array.isArray(response)) {
-          setHosts(response);
+  // Fetch hosts with applied filters
+  const fetchHosts = async (filters: any) => {
+    setIsLoading(true);
+    try {
+      // Always use the same endpoint
+      const response = await fetchWithAuth('/profile/filtered-hosts', {
+        method: 'POST',
+        body: JSON.stringify(filters),
+        headers: {
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        console.error('Failed to fetch hosts:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHosts();
-  }, []);
-
-  // Filter hosts based on selected filters
-  useEffect(() => {
-    let filtered = [...hosts];
-
-    // Filter by type
-    if (selectedType !== 'all') {
-      filtered = filtered.filter(host => host.type === selectedType);
-    }
-
-    // Filter by location
-    if (selectedLocation) {
-      filtered = filtered.filter(host => {
-        // Match by country
-        if (host.country?.value === selectedLocation.country.value) {
-          // If province is specified, match by province too
-          if (selectedLocation.province.value && host.province?.value) {
-            return host.province.value === selectedLocation.province.value;
-          }
-          return true; // Match by country if province not specified
-        }
-        return false;
       });
+      
+      if (response && Array.isArray(response)) {
+        setFilteredHosts(response);
+        setHosts(response);
+      }
+    } catch (error) {
+      console.error('Failed to fetch hosts:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    // Filter by status (only showing accepting hosts)
-    filtered = filtered.filter(host => host.open === 'Yes');
-
-    setFilteredHosts(filtered);
-  }, [hosts, selectedType, selectedLocation]);
-
-  const clearFilters = () => {
-    setSelectedType('all');
-    setSelectedLocation(null);
-    setTravelerCount('Any');
   };
 
-  const handleLocationSelect = (location: Location) => {
-    setSelectedLocation(location);
+  // Handle host type radio button change
+  const handleHostTypeChange = (type: 'Volunteer' | 'Paid' | null) => {
+    setHostType(type);
+  };
+
+  const handleLocationSelect = (location: {
+    country?: LocationOption;
+    province?: LocationOption;
+    city?: LocationOption;
+  }) => {
+    if (location.country) {
+      // Create a Location object from the selected dropdown values
+      const newLocation: Location = {
+        id: location.city?.value || location.province?.value || location.country.value,
+        value: location.city?.value || location.province?.value || location.country.value,
+        label: [
+          location.city?.label,
+          location.province?.label,
+          location.country.label
+        ].filter(Boolean).join(', '),
+        name: [
+          location.city?.label,
+          location.province?.label,
+          location.country.label
+        ].filter(Boolean).join(', '),
+        country: location.country,
+        province: location.province || { value: '', label: '' }
+      };
+      setSelectedLocation(newLocation);
+      
+      // Update pending location filter
+      setPendingLocationFilter({
+        country: location.country?.value || '',
+        province: location.province?.value || '',
+        city: location.city?.value || ''
+      });
+    } else {
+      setSelectedLocation(null);
+      
+      // Clear pending location filter
+      setPendingLocationFilter({
+        country: '',
+        province: '',
+        city: ''
+      });
+    }
+  };
+  
+  const handleLanguageChange = (selected: any) => {
+    setSelectedLanguages(selected || []);
+  };
+  
+  const applyFilters = () => {
+    // Combine all filters
+    const newFilters = {
+      ...pendingLocationFilter,
+      languages: selectedLanguages.map(lang => lang.value),
+      type: hostType || ''
+    };
+    
+    // Update active filters
+    setActiveFilters(newFilters);
+    
+    // Fetch hosts with new filters
+    fetchHosts(newFilters);
+  };
+
+  const clearFilters = () => {
+    // Reset all filter states
+    setHostType(null);
+    setSelectedLocation(null);
+    setSelectedLanguages([]);
+    setPendingLocationFilter({
+      country: '',
+      province: '',
+      city: ''
+    });
+    
+    // Clear active filters
+    const emptyFilters = {
+      country: '',
+      province: '',
+      city: '',
+      languages: [],
+      type: ''
+    };
+    setActiveFilters(emptyFilters);
+    
+    // Fetch all hosts
+    fetchHosts(emptyFilters);
+  };
+
+  // Generate a summary of active filters for display
+  const getFilterSummary = () => {
+    const parts = [];
+    
+    if (activeFilters.type) {
+      parts.push(activeFilters.type === 'Paid' ? 'Paid Hosts' : 'Volunteer Hosts');
+    }
+    
+    if (selectedLocation) {
+      parts.push(`in ${selectedLocation.label}`);
+    }
+    
+    if (activeFilters.languages.length > 0) {
+      const languageNames = activeFilters.languages.map(code => {
+        const lang = languageOptions.find(l => l.value === code);
+        return lang ? lang.label : code;
+      });
+      
+      if (languageNames.length === 1) {
+        parts.push(`speaking ${languageNames[0]}`);
+      } else if (languageNames.length === 2) {
+        parts.push(`speaking ${languageNames[0]} or ${languageNames[1]}`);
+      } else {
+        parts.push(`speaking ${languageNames.slice(0, -1).join(', ')} or ${languageNames[languageNames.length - 1]}`);
+      }
+    }
+    
+    return parts.join(' ');
   };
 
   return (
@@ -182,55 +318,81 @@ const HostListing: React.FC = () => {
       <div className="filters-sidebar">
         <div className="filter-section">
           <h3 className="filter-title">Filters</h3>
+
+          <div className="filter-group">
+            <div className="filter-header">
+              <label className="filter-label">Advanced Location Search</label>
+            </div>
+            <AdvancedLocationSearch 
+              onSelect={handleLocationSelect}
+              initialValue={selectedLocation}
+            />
+          </div>
           
           <div className="filter-group">
-            <label className="filter-label">Type</label>
-            <div className="checkbox-group">
-              <label className="checkbox-item">
+            <label className="filter-label">Host Type</label>
+            <div className="radio-group">
+              <label className="radio-item">
                 <input 
-                  type="checkbox"
-                  checked={selectedType === 'Volunteer'}
-                  onChange={() => setSelectedType('Volunteer')}
+                  type="radio"
+                  name="hostType"
+                  checked={hostType === 'Volunteer'}
+                  onChange={() => handleHostTypeChange('Volunteer')}
                 />
-                <span className="checkmark" />
+                <span className="radio-mark" />
                 Volunteer Hosts
               </label>
-              <label className="checkbox-item">
+              <label className="radio-item">
                 <input 
-                  type="checkbox"
-                  checked={selectedType === 'Paid'}
-                  onChange={() => setSelectedType('Paid')}
+                  type="radio"
+                  name="hostType"
+                  checked={hostType === 'Paid'}
+                  onChange={() => handleHostTypeChange('Paid')}
                 />
-                <span className="checkmark" />
+                <span className="radio-mark" />
                 Paid Hosts
+              </label>
+              <label className="radio-item">
+                <input 
+                  type="radio"
+                  name="hostType"
+                  checked={hostType === null}
+                  onChange={() => handleHostTypeChange(null)}
+                />
+                <span className="radio-mark" />
+                All Types
               </label>
             </div>
           </div>
-
+          
           <div className="filter-group">
-            <label className="filter-label">Location</label>
-            <LocationSearch 
-              //onLocationSelect={handleLocationSelect}
-              endpoint="/search/locations"
-              placeholder="Search cities..."
-              historyKey="citySearchHistory"
-              //@ts-ignore
-              transformData={(data) => data.cities.map(transformCity)}
+            <label className="filter-label">Languages</label>
+            <Select
+              isMulti
+              name="languages"
+              options={languageOptions}
+              className="language-select"
+              classNamePrefix="select"
+              value={selectedLanguages}
+              onChange={handleLanguageChange}
+              placeholder="Select languages..."
             />
           </div>
-
-          <div className="filter-group">
-            <label className="filter-label">Travelers</label>
-            <select
-              className="traveler-select"
-              value={travelerCount}
-              onChange={(e) => setTravelerCount(e.target.value)}
+          
+          <div className="filter-actions">
+            <button 
+              className="apply-filters-btn primary-button" 
+              onClick={applyFilters}
             >
-              <option value="Any">Any</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3+">3+</option>
-            </select>
+              Apply Filters
+            </button>
+            
+            <button 
+              className="clear-filters-btn secondary-button" 
+              onClick={clearFilters}
+            >
+              Clear All Filters
+            </button>
           </div>
         </div>
       </div>
@@ -241,11 +403,8 @@ const HostListing: React.FC = () => {
           <h2 className="results-count">
             {isLoading 
               ? 'Loading hosts...' 
-              : `${filteredHosts.length} results ${selectedLocation ? `in ${selectedLocation.label}` : ''}`}
+              : `${filteredHosts.length} results ${getFilterSummary() ? `(${getFilterSummary()})` : ''}`}
           </h2>
-          <button className="clear-filters" onClick={clearFilters}>
-            Clear Filters
-          </button>
         </div>
 
         {isLoading ? (

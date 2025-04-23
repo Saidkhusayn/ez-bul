@@ -118,9 +118,11 @@ const viewUser = async (req, res) => {
         score -= queryIsState && !isStateProvince ? 5000 : 0;
         
         // Penalize non-country entries with country name
-        score -= (location.name.toLowerCase() === location.countryName.toLowerCase() && !isCountry) 
-        ? 10000 
-        : 0;
+        if (location.name && location.countryName) {
+          score -= (location.name.toLowerCase() === location.countryName.toLowerCase() && !isCountry) 
+            ? 10000 
+            : 0;
+        }
     
         return {
           ...location,

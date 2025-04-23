@@ -119,6 +119,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
     
     // Navigate to either custom onSelect or default search route
     if (onSelect) {
+      console.log(result);
       onSelect(result);
     } else {
       navigate(`/search/${searchType}/${encodeURIComponent(result.value)}`);
