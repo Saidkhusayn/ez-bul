@@ -17,13 +17,18 @@ interface AdvancedLocationSearchProps {
 const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
   onSelect,
 }) => {
+
+  // Location Options States
   const [countryOptions, setCountryOptions] = useState<LocationOption[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<LocationOption[]>([]);
   const [cityOptions, setCityOptions] = useState<LocationOption[]>([]);
+
+  // Location Loading States
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
   const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   
+  // Selected Locations States
   const [selectedCountry, setSelectedCountry] = useState<LocationOption | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<LocationOption | null>(null);
   const [selectedCity, setSelectedCity] = useState<LocationOption | null>(null);
@@ -132,13 +137,14 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
     fetchCities();
   }, [selectedProvince]);
 
-  const handleApply = () => {
+  useEffect(() => {
+    console.log(selectedCountry);
     onSelect({
       country: selectedCountry || undefined,
       province: selectedProvince || undefined,
-      city: selectedCity || undefined
+      city: selectedCity || undefined,
     });
-  };
+  }, [ selectedCountry, selectedProvince, selectedCity ]);
 
   return (
     <div className="advanced-search">

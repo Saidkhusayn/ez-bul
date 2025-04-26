@@ -12,7 +12,6 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true, index: true },
   password: { type: String, required: true },
   
-  // Use OptionSchema for locations
   country: OptionSchema,
   province: OptionSchema,
   city: OptionSchema,
@@ -24,10 +23,13 @@ const UserSchema = new mongoose.Schema({
   type: { type: String, enum: ['Volunteer', 'Paid'], default: 'Volunteer' },
   rate: { type: Number },
   
-  // Use OptionSchema for languages
   languages: { type: [OptionSchema], default: [] },
   
   bio: { type: String, trim: true },
 });
+
+// Create Indexes for frequenlty used filter categories
+UserSchema.index({ open: 1, country: 1, province: 1, city: 1 });
+UserSchema.index({ 'languages.value': 1 });
 
 module.exports = mongoose.model("User", UserSchema);

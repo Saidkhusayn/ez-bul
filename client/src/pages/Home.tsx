@@ -22,7 +22,8 @@ const Home = () => {
     }));
   
   const handleSearchSelect = (result: SearchResult) => {
-    navigate(`/search/${result.label}`); 
+    console.log(result)
+    navigate(`/host-listing`, { state: {result} }); 
   };
 
   return (
@@ -38,7 +39,7 @@ const Home = () => {
             flexibility and compliance.
           </p>
           <div className="hero-search">
-            <SearchInput
+          <SearchInput
               onSelect={handleSearchSelect}
               endpoint="/search/locations"
               placeholder="Search Locations..."

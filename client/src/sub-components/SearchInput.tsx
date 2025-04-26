@@ -5,11 +5,16 @@ import DismissableOverlay from './DismissableOverlay';
 import { Search, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// interface LocationOption{
+//   value: string;
+//   label: string;
+// }
+
 export interface SearchResult {
   id: string;
-  value: string;
-  label: string;
-  username?: string;
+  label: string, //update it
+  //value: string;
+  //username?: string;
   [key: string]: any;
 }
 
@@ -50,6 +55,9 @@ const SearchInput: React.FC<SearchInputProps> = ({
     }
   }, [history, historyKey]);
 
+
+
+
   // Search functionality
   useEffect(() => {
     const fetchResults = async () => {
@@ -81,6 +89,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
     fetchResults();
   }, [debouncedQuery]);
 
+  useEffect (() => {
+    console.log(results)
+  })
+
 
   const handleSearch = useCallback(() => {
     if (query.length >= 2) {
@@ -109,6 +121,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   }, [query, searchType, navigate, disclosure]);
 
 
+
+
   const handleSelect = (result: SearchResult) => {
     setQuery('');
     disclosure.onClose();
@@ -119,12 +133,14 @@ const SearchInput: React.FC<SearchInputProps> = ({
     
     // Navigate to either custom onSelect or default search route
     if (onSelect) {
-      console.log(result);
+      //console.log(result);
       onSelect(result);
     } else {
       navigate(`/search/${searchType}/${encodeURIComponent(result.value)}`);
     }
   };
+
+
 
   return (
     <div className="search-form">
@@ -160,16 +176,18 @@ const SearchInput: React.FC<SearchInputProps> = ({
           
           {!isLoading && results.length > 0 && (
             <ul className="dropdown-list">
-              {results.map(result => (
-                <li
-                  key={result.id}
-                  className="dropdown-item"
-                  onClick={() => handleSelect(result)}
-                >
-                  {result.label}
-                </li>
-              ))}
-            </ul>
+            {results.map(result => (
+              <li
+                key={result.id}
+                className="dropdown-item"
+                onClick={() => handleSelect(result)}
+              >
+                {typeof result.label === 'object'
+                  ? result.label.text
+                  : result.label}
+              </li>
+            ))}
+          </ul>
           )}
 
           {!isLoading && results.length === 0 && debouncedQuery.length >= 2 && (
@@ -185,7 +203,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   onClick={() => handleSelect(item)}
                 >
                   <Clock size={14} className="history-icon" />
-                  {item.label}
+                     {typeof item.label === 'object'
+                      && item.label.text}
                 </li>
               ))}
             </ul>

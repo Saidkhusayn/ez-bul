@@ -24,7 +24,7 @@ const AppContent = () => {
         <Route path="/login" element={<LoginPage />} />    
         <Route path="/profile/edit" element={<ProfileEdit />} />
         <Route path="/profile/:username" element={<Profile />} />
-        <Route path="/search/location" element={<SearchLocation />} />
+        <Route path="/host-listing" element={<SearchLocation />} />
       </Routes>
     </>
   );

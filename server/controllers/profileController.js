@@ -62,53 +62,7 @@ const editProfile = async (req, res) => {
     }
 };  
 
-const getAllHosts = async (req, res) => {
-  try {
-    const hosts = await UserModel.find({ open: 'Yes' }).select("-password -__v");
-    res.json(hosts);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to get hosts", details: err.message });
-  }
-};
 
-const getFilteredHosts = async (req, res) => {
-  try {
-    // Extract filter parameters from request body
-    const { country, province, city, languages, type } = req.body;
-    
-    // Start with base query - hosts who are open
-    let query = { open: 'Yes' };
-    
-    // Add location filters if provided
-    if (city) {
-      query['city.value'] = city;
-    } else if (province) {
-      query['province.value'] = province;
-    } else if (country) {
-      query['country.value'] = country;
-    }
-    
-    // Add language filter if provided
-    if (languages && languages.length > 0) {
-      query['languages'] = {
-        $elemMatch: {
-          value: { $in: languages }
-        }
-      };
-    }
-    
-    // Add type filter if provided
-    if (type) {
-      query.type = type;
-    }
-    
-    // Find hosts matching the criteria
-    const hosts = await UserModel.find(query).select("-password -__v");
-    res.json(hosts);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to get filtered hosts", details: err.message });
-  }
-};
 
 
 
@@ -117,6 +71,4 @@ module.exports = {
   passUserObject, 
   uploadProfilePicture, 
   editProfile, 
-  getAllHosts,
-  getFilteredHosts,
 };

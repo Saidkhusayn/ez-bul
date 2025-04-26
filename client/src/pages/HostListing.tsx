@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { fetchWithAuth } from "../utilities/api";
 import AdvancedLocationSearch from '../sub-components/AdvancedLocationSearch';
 import Select from 'react-select';
 import languages from "../assets/languages.json";
@@ -17,23 +16,25 @@ interface LocationOption {
 }
 
 interface Location {
-  id: string;
-  value: string;
-  label: string;
-  name: string;
-  country: { value: string; label: string };
-  province: { value: string; label: string };
+  country: LocationOption | undefined;
+  province: LocationOption | undefined;
+  city:LocationOption | undefined;
+}
+
+interface Filter {
+  country: LocationOption | undefined;
+  province: LocationOption | undefined;
+  city:LocationOption | undefined;
+  languages: LocationOption[],
+  type: 'Volunteer' | 'Paid' | undefined,
 }
 
 interface Host {
-  id: string;
+  _id: string;
   name: string;
   profilePicture: string;
   type: 'Volunteer' | 'Paid';
   rate: number;
-  responseTime: string;
-  references: number;
-  friends: number;
   languages: { value: string; label: string }[];
   open: 'Yes' | 'No';
   bio: string;
@@ -98,97 +99,97 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
 );
 
 const HostListing: React.FC = () => {
+
   const routeLocation = useLocation();
+
+  // Filter States
   const [hostType, setHostType] = useState<'Volunteer' | 'Paid' | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<LocationOption[]>([]);
-  const [hosts, setHosts] = useState<Host[]>([]);
+  //const [hosts, setHosts] = useState<Host[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [filteredHosts, setFilteredHosts] = useState<Host[]>([]);
   
   // Store filters that will be applied when the user clicks "Apply Filters"
-  const [pendingLocationFilter, setPendingLocationFilter] = useState<{
-    country: string;
-    province: string;
-    city: string;
-  }>({ country: '', province: '', city: '' });
-  
-  // Active filters (applied to the backend)
-  const [activeFilters, setActiveFilters] = useState({
-    country: '',
-    province: '',
-    city: '',
-    languages: [] as string[],
-    type: '' as 'Volunteer' | 'Paid' | ''
-  });
+  const [pendingLocationFilter, setPendingLocationFilter] = useState<Location>({ country: undefined, province: undefined, city: undefined });
+  const [activeFilters, setActiveFilters] = useState<Filter>({ country: undefined, province: undefined, city: undefined, languages: [], type: undefined });
 
   // Parse query params from URL on component mount
   useEffect(() => {
-    const params = new URLSearchParams(routeLocation.search);
-    const locationId = params.get('locationId');
-    const locationName = params.get('locationName');
-    const country = params.get('country');
-    const province = params.get('province');
+    const result = routeLocation.state?.result;
+    if (result) {
+      const fullParts = result.label.full || [];
+      const len =  fullParts.length? fullParts.length : 1;
+
+    console.log(fullParts, len)
+
+      let country, province, city;
     
-    if (locationId && locationName && country) {
-      const locationObj = {
-        id: locationId,
-        value: locationId,
-        label: locationName,
-        name: locationName,
-        country: { 
-          value: country.split(':')[0] || '', 
-          label: country.split(':')[1] || '' 
-        },
-        province: { 
-          value: province?.split(':')[0] || '', 
-          label: province?.split(':')[1] || '' 
-        }
-      };
-      
-      setSelectedLocation(locationObj);
-      
-      // Set the pending location filter
-      setPendingLocationFilter({
-        country: locationObj.country.value,
-        province: locationObj.province?.value || '',
-        city: ''
+      if (len === 1) {
+        // only country
+        country = fullParts;
+      } else if (len === 2) {
+        // province + country
+        [province, country] = fullParts;
+      } else if (len === 3) {
+        // city + province + … + country
+        city     = fullParts[0];
+        province = fullParts[1];
+        country  = fullParts[2];
+      }
+
+      console.log(country, province, city)
+      handleLocationSelect({ country, province, city });
+    }
+    else {
+      // no initial location → just fetch all open hosts
+      fetchHosts({
+        country:  undefined,
+        province: undefined,
+        city:     undefined,
+        languages: [],
+        type:     undefined
       });
     }
-    
-    // Initial fetch of all open hosts
-    fetchHosts({
-      country: '',
-      province: '',
-      city: '',
-      languages: [],
-      type: ''
-    });
   }, [routeLocation]);
+
+
+
 
   // Fetch hosts with applied filters
   const fetchHosts = async (filters: any) => {
     setIsLoading(true);
     try {
-      // Always use the same endpoint
-      const response = await fetchWithAuth('/profile/filtered-hosts', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/hosts`, {
         method: 'POST',
         body: JSON.stringify(filters),
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      if (response && Array.isArray(response)) {
-        setFilteredHosts(response);
-        setHosts(response);
+  
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setFilteredHosts(data);
+          //setHosts(data);
+        } else {
+          console.error('Unexpected response format:', data);
+          setFilteredHosts([]);
+        }
+      } else {
+        console.error('Failed to fetch hosts, server returned:', response.status);
+        setFilteredHosts([]);
       }
     } catch (error) {
       console.error('Failed to fetch hosts:', error);
+      setFilteredHosts([]);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // Handle host type radio button change
   const handleHostTypeChange = (type: 'Volunteer' | 'Paid' | null) => {
@@ -200,54 +201,52 @@ const HostListing: React.FC = () => {
     province?: LocationOption;
     city?: LocationOption;
   }) => {
-    if (location.country) {
-      // Create a Location object from the selected dropdown values
-      const newLocation: Location = {
-        id: location.city?.value || location.province?.value || location.country.value,
-        value: location.city?.value || location.province?.value || location.country.value,
-        label: [
-          location.city?.label,
-          location.province?.label,
-          location.country.label
-        ].filter(Boolean).join(', '),
-        name: [
-          location.city?.label,
-          location.province?.label,
-          location.country.label
-        ].filter(Boolean).join(', '),
-        country: location.country,
-        province: location.province || { value: '', label: '' }
-      };
-      setSelectedLocation(newLocation);
-      
-      // Update pending location filter
-      setPendingLocationFilter({
-        country: location.country?.value || '',
-        province: location.province?.value || '',
-        city: location.city?.value || ''
-      });
-    } else {
-      setSelectedLocation(null);
-      
-      // Clear pending location filter
-      setPendingLocationFilter({
-        country: '',
-        province: '',
-        city: ''
-      });
-    }
+    // — your existing state updates —
+    setSelectedLocation({
+      country:  location.country,
+      province: location.province  || { value: '', label: '' },
+      city:     location.city      || { value: '', label: '' }
+    });
+  
+    setPendingLocationFilter({
+      country:  location.country,
+      province: location.province,
+      city:     location.city
+    });
+  
+    // — NEW: build the full filters object and fetch immediately —
+    const newFilters: Filter = {
+      country:  location.country,
+      province: location.province,
+      city:     location.city,
+      languages: selectedLanguages,
+      type:     hostType || undefined
+    };
+  
+    // update “activeFilters” UI summary if you need it
+    setActiveFilters(newFilters);
+  
+    // fire the query
+    fetchHosts(newFilters);
   };
   
   const handleLanguageChange = (selected: any) => {
     setSelectedLanguages(selected || []);
   };
-  
+
+
+  // At the end, it is taking all states for filters and applying them
   const applyFilters = () => {
-    // Combine all filters
+    const locationFilters = selectedLocation ? {
+      country: selectedLocation.country || undefined,
+      province: selectedLocation.province || undefined,
+      city: selectedLocation.city || undefined,
+    } : pendingLocationFilter;
+  
     const newFilters = {
-      ...pendingLocationFilter,
-      languages: selectedLanguages.map(lang => lang.value),
-      type: hostType || ''
+      ...locationFilters,
+      languages: selectedLanguages,
+      type: hostType || undefined as 'Volunteer' | 'Paid' | undefined
     };
     
     // Update active filters
@@ -255,30 +254,31 @@ const HostListing: React.FC = () => {
     
     // Fetch hosts with new filters
     fetchHosts(newFilters);
+
+    //console.log(newFilters)
   };
 
   const clearFilters = () => {
-    // Reset all filter states
+
     setHostType(null);
     setSelectedLocation(null);
     setSelectedLanguages([]);
     setPendingLocationFilter({
-      country: '',
-      province: '',
-      city: ''
+      country: undefined,
+      province: undefined,
+      city: undefined
     });
     
     // Clear active filters
     const emptyFilters = {
-      country: '',
-      province: '',
-      city: '',
+      country: undefined,
+      province: undefined,
+      city: undefined,
       languages: [],
-      type: ''
+      type: "" as "Volunteer" | "Paid" | undefined
     };
+
     setActiveFilters(emptyFilters);
-    
-    // Fetch all hosts
     fetchHosts(emptyFilters);
   };
 
@@ -291,13 +291,12 @@ const HostListing: React.FC = () => {
     }
     
     if (selectedLocation) {
-      parts.push(`in ${selectedLocation.label}`);
+      parts.push(`in ${selectedLocation.city?.label || selectedLocation.province?.label || selectedLocation.country?.label }`); //update if wrong
     }
     
     if (activeFilters.languages.length > 0) {
       const languageNames = activeFilters.languages.map(code => {
-        const lang = languageOptions.find(l => l.value === code);
-        return lang ? lang.label : code;
+        return code.label;
       });
       
       if (languageNames.length === 1) {
@@ -325,7 +324,7 @@ const HostListing: React.FC = () => {
             </div>
             <AdvancedLocationSearch 
               onSelect={handleLocationSelect}
-              initialValue={selectedLocation}
+              //initialValue={selectedLocation}
             />
           </div>
           
@@ -411,7 +410,7 @@ const HostListing: React.FC = () => {
           <div className="loading">Loading hosts...</div>
         ) : filteredHosts.length > 0 ? (
           filteredHosts.map(host => (
-            <HostCard key={host.id} host={host} />
+            <HostCard key={host._id} host={host} />
           ))
         ) : (
           <div className="no-results">
