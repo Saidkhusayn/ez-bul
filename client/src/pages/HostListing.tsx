@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import AdvancedLocationSearch from '../sub-components/AdvancedLocationSearch';
 import Select from 'react-select';
 import languages from "../assets/languages.json";
+//import { SearchResult } from '../sub-components/SearchInput';
 
 // Language options for multi-select dropdown
 const languageOptions = languages.map((lang) => ({
@@ -118,31 +119,15 @@ const HostListing: React.FC = () => {
   // Parse query params from URL on component mount
   useEffect(() => {
     const result = routeLocation.state?.result;
+
     if (result) {
-      const fullParts = result.label.full || [];
-      const len =  fullParts.length? fullParts.length : 1;
+    const city = result.city || undefined;
+    const province = result.province || undefined;
+    const country = result.country || undefined;
 
-    console.log(fullParts, len)
+    handleLocationSelect({ country, province, city });
 
-      let country, province, city;
-    
-      if (len === 1) {
-        // only country
-        country = fullParts;
-      } else if (len === 2) {
-        // province + country
-        [province, country] = fullParts;
-      } else if (len === 3) {
-        // city + province + … + country
-        city     = fullParts[0];
-        province = fullParts[1];
-        country  = fullParts[2];
-      }
-
-      console.log(country, province, city)
-      handleLocationSelect({ country, province, city });
-    }
-    else {
+    } else {
       // no initial location → just fetch all open hosts
       fetchHosts({
         country:  undefined,
@@ -153,8 +138,6 @@ const HostListing: React.FC = () => {
       });
     }
   }, [routeLocation]);
-
-
 
 
   // Fetch hosts with applied filters

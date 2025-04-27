@@ -56,32 +56,37 @@ const viewUser = async (req, res) => {
     if (!cityId) throw new Error('cityId is required');
     if (!username) throw new Error('GeoNames username is required');
   
-    // Fetch the full hierarchy for the city
-    const response = await axios.get(`${BASE_URL}/hierarchyJSON`, {
-      params: { geonameId: cityId, username }
-    });
+    try {
+      // FETCH the full hierarchy for the city
+      const response = await axios.get(`${BASE_URL}/hierarchyJSON`, {
+        params: { geonameId: cityId, username }
+      });
   
-    const nodes = response.data.geonames || [];
-    // Find the admin1 entry (feature code 'ADM1')
-    const adm1 = nodes.find(node => node.fcode === 'ADM1');
+      const nodes = response.data.geonames || [];
+      // Find the admin1 entry (feature code 'ADM1')
+      const adm1 = nodes.find(node => node.fcode === 'ADM1');
   
-    if (!adm1) {
-      throw new Error(`No ADM1 parent found for cityId ${cityId}`);
+      if (!adm1) {
+        console.error(`No ADM1 parent found for cityId ${cityId}`);
+        return cityId; // FALLBACK: return cityId itself if no parent found
+      }
+  
+      return adm1.geonameId;
+    } catch (err) {
+      console.warn(`Hierarchy lookup failed for ${cityId}:`, err.message);
+      return  // FALLBACK on error
     }
-  
-    return adm1.geonameId;
   }
-
-
+  
   const searchLocations = async (req, res) => {
     try {
       const rawQuery = req.query.query?.trim().toLowerCase();
-      if (!rawQuery) return res.json([]);
+      if (!rawQuery) return res.json([]); // RETURN 200 empty array on empty query
   
-      const response = await axios.get('https://secure.geonames.org/searchJSON', {
+      const response = await axios.get(`${BASE_URL}/searchJSON`, {
         params: {
           q: rawQuery,
-          maxRows: 100,
+          maxRows: 40,
           username: 'javabek',
           featureClass: ['A', 'P'],
           style: 'LONG',
@@ -89,52 +94,21 @@ const viewUser = async (req, res) => {
         },
       });
   
-      const formatLabel = async (location) => {
-        if (location.fcl === 'L' || location.fcode === 'RGN') return null;
+      const geonames = response?.data?.geonames;
+      if (!Array.isArray(geonames)) {
+        // RETURN 200 empty array instead of 500
+        return res.json([]);
+      }
   
-        const isCountry = location.fcode === 'PCLI';
-        const isProvince = location.fcode.startsWith('ADM1');
+      // STEP 1: Score & annotate each result
+      const locationsWithScore = geonames.map(location => {
+        const isCountry      = location.fcode === 'PCLI';
+        const isStateProvince= location.fcode.startsWith('ADM1');
+        const isCity         = location.fcode.startsWith('PPL');
+        const isCapital      = location.fcode === 'PPLC';
   
-        if (isCountry) {
-          return {
-            text: location.countryName,
-            full: { value: location.countryId, label: location.countryName },
-          };
-        }
-  
-        const parts = [];
-        const partsFull = [];
-  
-        parts.push(location.name);
-        partsFull.push({ value: location.geonameId, label: location.name });
-  
-        if (location.adminName1 && !isProvince) {
-          const admin1Id = await getAdmin1Id({ cityId: location.geonameId, username: "javabek" });
-          //parts.push(location.adminName1);
-          //console.log(admin1Id);
-          partsFull.push({ value: admin1Id, label: location.adminName1 });
-        }
-  
-        const countryAlreadyIncluded = parts.some((p) => p === location.countryName);
-        if (!isCountry && !countryAlreadyIncluded) {
-          //parts.push(location.countryName);
-          partsFull.push({ value: location.countryId, label: location.countryName });
-        }
-  
-        return {
-          text: partsFull.map((loc) => loc.label).join(", "),
-          full: partsFull,
-        };
-      };
-  
-      const locationsWithScore = response?.data.geonames.map((location) => {
-        const isCountry = location.fcode === 'PCLI';
-        const isStateProvince = location.fcode.startsWith('ADM1');
-        const isCity = location.fcode.startsWith('PPL');
-        const isCapital = location.fcode === 'PPLC';
-  
-        const exactMatch = location.name.toLowerCase() === rawQuery;
-        const queryIsState = rawQuery.match(/(state|province|region)/i);
+        const exactMatch     = location.name.toLowerCase() === rawQuery;
+        const queryIsState   = !!rawQuery.match(/(state|province|region)/i);
   
         let score = 0;
         score += isCountry ? 5000 : 0;
@@ -156,46 +130,70 @@ const viewUser = async (req, res) => {
         return {
           ...location,
           score,
-          type: isCountry ? 'country' :
-                isStateProvince ? 'province' :
-                isCity ? 'city' : 'other',
+          type: isCountry      ? 'country'
+              : isStateProvince? 'province'
+              : isCity         ? 'city'
+              : 'other',
         };
       });
   
-      // First sort by score
-      const sortedLocations = locationsWithScore.sort((a, b) => b.score - a.score);
+      // STEP 2: Sort by score descending
+      const sorted = locationsWithScore.sort((a, b) => b.score - a.score);
   
-      // Now map **async** to formatLabel
+      // STEP 3: Dedupe and take top 7 BEFORE calling hierarchy endpoint
+      const topUnique = sorted
+        .filter((loc, i, arr) => arr.findIndex(x => x.name === loc.name) === i)
+        .slice(0, 7);
+  
+      // STEP 4: Format labels (only up to 7 calls to getAdmin1Id)
       const mappedWithLabels = await Promise.all(
-        sortedLocations.map(async (location) => {
-          const label = await formatLabel(location);
+        topUnique.map(async location => {
+          // formatLabel inlined for clarity
+          const isCountry      = location.fcode === 'PCLI';
+          const isProvince     = location.fcode.startsWith('ADM1');
+          const isCityOrOther  = location.fcode.startsWith('PPL') || location.fcl === "P";
+  
+          if (location.fcl === 'L' || location.fcode === 'RGN') {
+            return ;
+          }
+  
+          // Build partsFull
+          const partsFull = [{ value: location.geonameId, label: location.name }];
+  
+          if (isCityOrOther && location.adminName1) {
+            const admin1Id = await getAdmin1Id({ cityId: location.geonameId, username: 'javabek' });
+            partsFull.push({ value: admin1Id, label: location.adminName1 });
+
+          } else if (isProvince) {
+            partsFull.push({ value: location.geonameId, label: location.name });
+          }
+  
+          if (!partsFull.some(p => p.label === location.countryName)) {
+            partsFull.push({ value: location.countryId, label: location.countryName });
+          }
+  
+          const labelText = partsFull.map(p => p.label).join(', ');
+  
           return {
-            id: location.geonameId,
-            label,
-            type: location.type,
-            original: location,
+            id:           location.geonameId,
+            label:        labelText,
+            locationArr:  partsFull,
+            type:         location.type,
           };
         })
       );
   
-      // Filter and clean results
-      const filtered = mappedWithLabels
-        .filter(item => item.label)
-        .filter(item => item.label.text.toLowerCase().includes(rawQuery))
-        .reduce((acc, current) => {
-          const exists = acc.some(item => item.label.text === current.label.text);
-          if (!exists) acc.push(current);
-          return acc;
-        }, [])
-        .slice(0, 7);
+      // STEP 5: Filter out any nulls and final text‐match filter
+      const finalResults = (mappedWithLabels.filter(Boolean))
+        .filter(item => item.label.toLowerCase().includes(rawQuery));
   
-      res.json(filtered);
+      return res.json(finalResults);
     } catch (err) {
       console.error('Search error:', err);
-      res.status(500).json({ message: "Location search failed", error: err.message });
+      // RETURN empty array even on unexpected errors
+      return res.json([]);
     }
   };
-  
 
   const getFilteredHosts = async (req, res) => {
     try {

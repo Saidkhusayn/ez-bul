@@ -6,23 +6,56 @@ import Login from '../components/LoginBox';
 import { useNavigate } from 'react-router-dom';
 import { SearchResult } from '../sub-components/SearchInput';
 
+interface RawLocation {
+  id: number;
+  label: string;
+  type: 'country' | 'province' | 'city' | 'other';
+  locationArr:  { value: string; label: string }[];
+}
+
+interface Transformed {
+  id: number;
+  label: string;
+  type: string;
+  country?: { value: string; label: string };
+  province?: { value: string; label: string };
+  city?: { value: string; label: string };
+}
+
 const Home = () => {
   const { showLogin } = useUI();
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  const transformLocation = (data: any) => 
-    data.map((location: any) => ({
-      id: location.id,
-      value: location.value,
-      label: location.label,
-      name: location.name,
-      country: location.country,
-      province: location.province
-    }));
+  const transformLocation = (data: RawLocation[]): Transformed[] =>
+    data.map(loc => {
+      const full = loc.locationArr;
+      let country, province, city;
+      console.log(loc)
+  
+      if (loc.type === 'country') {
+        country = full[0];
+      } else if (loc.type === 'province') {
+        province = full[0];
+        country  = full[1];
+      } else {
+        city     = full[0];
+        province = full.length === 3 ? full[1] : undefined;
+        country  = full.length === 3 ? full[2] : undefined;
+      }
+      
+      return {
+        id: loc.id,
+        label: loc.label,
+        type: loc.type,
+        country,
+        province,
+        city,
+      };
+    });
   
   const handleSearchSelect = (result: SearchResult) => {
-    console.log(result)
+    console.log(result) //right
     navigate(`/host-listing`, { state: {result} }); 
   };
 

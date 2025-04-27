@@ -11,10 +11,12 @@ import { useNavigate } from 'react-router-dom';
 // }
 
 export interface SearchResult {
-  id: string;
-  label: string, //update it
-  //value: string;
-  //username?: string;
+  id: number;
+  label: string, 
+  type: string;
+  country?: { value: string; label: string };
+  province?: { value: string; label: string };
+  city?: { value: string; label: string };
   [key: string]: any;
 }
 
@@ -35,14 +37,18 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onSelect,
   searchType,
 }) => {
+  // Search states
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [history, setHistory] = useState<SearchResult[]>([]);
+
+  // Utility states
   const [isLoading, setIsLoading] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const disclosure = useDisclosure();
   const navigate = useNavigate();
 
+  
   // Search history management
   useEffect(() => {
     const savedHistory = localStorage.getItem(historyKey);
@@ -54,8 +60,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
       localStorage.setItem(historyKey, JSON.stringify(history));
     }
   }, [history, historyKey]);
-
-
 
 
   // Search functionality
@@ -75,11 +79,11 @@ const SearchInput: React.FC<SearchInputProps> = ({
         
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Search failed');
-        
+        console.log(data)
         setResults(transformData(data));
         disclosure.onOpen();
       } catch (error) {
-        console.error('Search error:', error);
+        console.error('Backend responded with error:', error);
         disclosure.onClose();
       } finally {
         setIsLoading(false);
@@ -89,10 +93,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
     fetchResults();
   }, [debouncedQuery]);
 
-  useEffect (() => {
-    console.log(results)
-  })
-
 
   const handleSearch = useCallback(() => {
     if (query.length >= 2) {
@@ -101,9 +101,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
       
       // Create history item for manual search
       const newHistoryItem: SearchResult = {
-        id: `search-${Date.now()}`, // Unique ID for manual searches
+        id: Date.now(), // Unique ID for manual searches
         value: encodedQuery,
         label: query,
+        type: "other",
         searchType,
         isManualSearch: true
       };
@@ -126,19 +127,24 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const handleSelect = (result: SearchResult) => {
     setQuery('');
     disclosure.onClose();
+
     setHistory(prev => [
       result,
-      ...prev.filter(item => item.id !== result.id)
+      ...prev.filter(item => item.id !== result.id) //fix this there is something wrong with the id
     ].slice(0, 5));
     
     // Navigate to either custom onSelect or default search route
     if (onSelect) {
-      //console.log(result);
+      console.log(result)
       onSelect(result);
     } else {
       navigate(`/search/${searchType}/${encodeURIComponent(result.value)}`);
     }
   };
+
+  useEffect (() => {
+    console.log(history)
+  })
 
 
 
@@ -182,9 +188,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                 className="dropdown-item"
                 onClick={() => handleSelect(result)}
               >
-                {typeof result.label === 'object'
-                  ? result.label.text
-                  : result.label}
+                {result.label}
               </li>
             ))}
           </ul>
@@ -203,8 +207,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                   onClick={() => handleSelect(item)}
                 >
                   <Clock size={14} className="history-icon" />
-                     {typeof item.label === 'object'
-                      && item.label.text}
+                     { item.label}
                 </li>
               ))}
             </ul>

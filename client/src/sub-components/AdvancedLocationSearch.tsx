@@ -137,14 +137,14 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
     fetchCities();
   }, [selectedProvince]);
 
+  // Only logic here
   useEffect(() => {
-    console.log(selectedCountry);
     onSelect({
       country: selectedCountry || undefined,
       province: selectedProvince || undefined,
       city: selectedCity || undefined,
     });
-  }, [ selectedCountry, selectedProvince, selectedCity ]);
+  }, [ selectedCountry, selectedProvince, selectedCity ]); // The filters are updating whenever the dropdown value changes
 
   return (
     <div className="advanced-search">
