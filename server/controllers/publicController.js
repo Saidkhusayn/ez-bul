@@ -197,42 +197,77 @@ const viewUser = async (req, res) => {
 
   const getFilteredHosts = async (req, res) => {
     try {
-      // 1. We now expect full Option objects from the client:
-      const { country, province, city, languages, type } = req.body;
+      // 1. Destructure everything out, including manual-search flags
+      const {
+        country,
+        province,
+        city,
+        languages,
+        type,
+        isManualSearch,  // boolean set by your front end for manual queries
+        value,           // encodedQuery for manual searches
+        label            // user’s raw text for manual searches
+      } = req.body;
   
-      // 2. Base filter: only hosts who are 'open'
-      const query = { open: 'Yes' };
+      // Base filter: only hosts who are open
+      const baseFilter = { open: 'Yes' };
   
-      // 3. Conditionally add each filter by its .value
-      if (country && country.value)  query['country.value']  = country.value;
-      if (province && province.value) query['province.value'] = province.value;
-      if (city && city.value)     query['city.value']     = city.value;
+      // 2. If this was a manual search, ignore the .value filters
+      if (isManualSearch) {
+        // Decide which text to use
+        const searchText = (label || (value ? decodeURIComponent(value) : '')).trim();
+        if (!searchText) return res.json([]);
   
-      // 4. Languages: incoming array of Option objects → match any value
-      if (Array.isArray(languages) && languages.length > 0) {
-        const vals = languages.map(l => l.value);
-        query['languages.value'] = { $in: vals };
+        // Build an exact‐match, case‐insensitive regex
+        const regex = new RegExp(`^${searchText}$`, 'i');
+  
+        // Fallback query: match any of the human‐readable labels
+        const manualQuery = {
+          ...baseFilter,
+          $or: [
+            { 'country.label':  regex },
+            { 'province.label': regex },
+            { 'city.label':     regex }
+          ]
+        };
+        // still allow filtering by type or languages
+        if (type) manualQuery.type = type;
+        if (Array.isArray(languages) && languages.length) {
+          manualQuery['languages.value'] = { $in: languages.map(l => l.value) };
+        }
+  
+        const hostsManual = await UserModel
+          .find(manualQuery)
+          .select('-password -__v');
+  
+        return res.json(hostsManual);
       }
   
-      // 5. Host type (Volunteer / Paid)
-      if (type) {
-        query.type = type;
+      // 3. Otherwise do your normal .value-based filtering
+      const query = { ...baseFilter };
+      if (country?.value)  query['country.value']  = country.value;
+      if (province?.value) query['province.value'] = province.value;
+      if (city?.value)     query['city.value']     = city.value;
+      if (type)            query.type              = type;
+      if (Array.isArray(languages) && languages.length) {
+        query['languages.value'] = { $in: languages.map(l => l.value) };
       }
   
-      // 6. Run the query, excluding sensitive fields
       const hosts = await UserModel
         .find(query)
         .select('-password -__v');
   
-      // 7. Send back matching hosts
       return res.json(hosts);
     } catch (err) {
+      console.error('getFilteredHosts error', err);
       return res.status(500).json({
-        error:   "Failed to get hosts",
+        error:   'Failed to get hosts',
         details: err.message
       });
     }
   };
+  
+  
   
 
 

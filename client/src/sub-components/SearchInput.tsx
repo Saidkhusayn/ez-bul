@@ -97,15 +97,17 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const handleSearch = useCallback(() => {
     if (query.length >= 2) {
       const encodedQuery = encodeURIComponent(query);
-      const searchPath = `/search/${searchType}/${encodedQuery}`;
+      const searchPath = `/host-listing`;
       
       // Create history item for manual search
       const newHistoryItem: SearchResult = {
-        id: Date.now(), // Unique ID for manual searches
+        id: Date.now(), 
         value: encodedQuery,
         label: query,
         type: "other",
-        searchType,
+        country: undefined,
+        province: undefined,
+        city: undefined,
         isManualSearch: true
       };
 
@@ -115,7 +117,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         ...prev.filter(item => item.value !== encodedQuery)
       ].slice(0, 5));
 
-      navigate(searchPath);
+      navigate(searchPath, { state: {newHistoryItem} });
       setQuery('');
       disclosure.onClose();
     }
@@ -143,7 +145,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   };
 
   useEffect (() => {
-    console.log(history)
+    //console.log(history)
   })
 
 

@@ -28,6 +28,7 @@ interface Filter {
   city:LocationOption | undefined;
   languages: LocationOption[],
   type: 'Volunteer' | 'Paid' | undefined,
+  [key: string]: any; //change it to make it more specific
 }
 
 interface Host {
@@ -118,26 +119,38 @@ const HostListing: React.FC = () => {
 
   // Parse query params from URL on component mount
   useEffect(() => {
-    const result = routeLocation.state?.result;
-
-    if (result) {
-    const city = result.city || undefined;
-    const province = result.province || undefined;
-    const country = result.country || undefined;
-
-    handleLocationSelect({ country, province, city });
-
-    } else {
-      // no initial location → just fetch all open hosts
-      fetchHosts({
-        country:  undefined,
-        province: undefined,
-        city:     undefined,
-        languages: [],
-        type:     undefined
+    const { result, newHistoryItem } = routeLocation.state || {};
+    // whichever one is non-undefined:
+    const incoming = newHistoryItem ?? result;
+  
+    console.log('incoming object →', incoming);
+    console.log('incoming.label    →', incoming?.label);
+  
+    if (incoming) {
+      // destructure exactly what you need
+      const {
+        country,
+        province,
+        city,
+        value,
+        label,
+        isManualSearch
+      } = incoming;
+  
+      handleLocationSelect({
+        country,
+        province,
+        city,
+        value,
+        label,
+        isManualSearch
       });
+    } else {
+      // no incoming filters
+      fetchHosts(activeFilters);
     }
   }, [routeLocation]);
+  
 
 
   // Fetch hosts with applied filters
@@ -183,6 +196,7 @@ const HostListing: React.FC = () => {
     country?: LocationOption;
     province?: LocationOption;
     city?: LocationOption;
+    [key: string]: any;
   }) => {
     // — your existing state updates —
     setSelectedLocation({
@@ -203,7 +217,10 @@ const HostListing: React.FC = () => {
       province: location.province,
       city:     location.city,
       languages: selectedLanguages,
-      type:     hostType || undefined
+      type:     hostType || undefined,
+      value: location.value,
+      label: location.label,
+      isManualSearch: location.isManualSearch,
     };
   
     // update “activeFilters” UI summary if you need it
@@ -268,6 +285,10 @@ const HostListing: React.FC = () => {
   // Generate a summary of active filters for display
   const getFilterSummary = () => {
     const parts = [];
+
+    if (activeFilters.isManualSearch && activeFilters.label) {
+      return `in ${activeFilters.label}`;
+    }
     
     if (activeFilters.type) {
       parts.push(activeFilters.type === 'Paid' ? 'Paid Hosts' : 'Volunteer Hosts');
