@@ -3,112 +3,30 @@ import { useLocation } from 'react-router-dom';
 import AdvancedLocationSearch from '../sub-components/AdvancedLocationSearch';
 import Select from 'react-select';
 import languages from "../assets/languages.json";
-//import { SearchResult } from '../sub-components/SearchInput';
+import { Host, Filter, LocationOption   } from '../utilities/props';
+import HostCard from '../sub-components/HostCard';
 
-// Language options for multi-select dropdown
+
 const languageOptions = languages.map((lang) => ({
   value: lang.code,
   label: lang.name,
 }));
 
-interface LocationOption {
-  value: string;
-  label: string;
-}
-
 interface Location {
   country: LocationOption | undefined;
   province: LocationOption | undefined;
   city:LocationOption | undefined;
+  [key: string]: any;
 }
 
-interface Filter {
-  country: LocationOption | undefined;
-  province: LocationOption | undefined;
-  city:LocationOption | undefined;
-  languages: LocationOption[],
-  type: 'Volunteer' | 'Paid' | undefined,
-  [key: string]: any; //change it to make it more specific
-}
-
-interface Host {
-  _id: string;
-  name: string;
-  profilePicture: string;
-  type: 'Volunteer' | 'Paid';
-  rate: number;
-  languages: { value: string; label: string }[];
-  open: 'Yes' | 'No';
-  bio: string;
-  country?: { value: string; label: string };
-  province?: { value: string; label: string };
-  city?: { value: string; label: string };
-}
-
-interface HostCardProps {
-  host: Host;
-}
-
-const HostCard: React.FC<HostCardProps> = ({ host }) => (
-  <div className="host-card">
-    <div className="host-header">
-      <div className="host-avatar">      
-        {host.profilePicture ? (     
-            <img 
-              src={host.profilePicture} 
-              alt={host.name} 
-            />                     
-        ) : (
-          <div className="avatar-placeholder">
-            {(host.name || host.name).charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
-      <div className="host-info">
-        <h3 className="host-name">{host.name}</h3>
-        <span className="response-time">{host.type === "Paid" ? ("$" + host.rate + " p/h") : (host.type) }</span>
-      </div>
-    </div>
-    
-    <div className="host-stats">
-     
-      <div className="stat-item">
-        <span className="stat-label">Speaks:</span>
-        <span className="stat-value">
-          {host.languages?.length > 0 
-            ? host.languages.map(lang => lang.label).join(', ') 
-            : 'No languages specified'}
-        </span>
-      </div>
-      {host.country && (
-        <div className="stat-item">
-          <span className="stat-label">Location:</span>
-          <span className="stat-value">
-            {host.city?.label ? `${host.city.label}, ` : ''}
-            {host.province?.label ? `${host.province.label}, ` : ''}
-            {host.country.label}
-          </span>
-        </div>
-      )}
-    </div>
-
-    <p className="host-description">{host.bio || 'No description available'}</p>
-    
-    {host.open === 'Yes' && (
-      <button className="status-badge accepting">Accepting Guests</button>
-    )}
-  </div>
-);
 
 const HostListing: React.FC = () => {
 
   const routeLocation = useLocation();
 
-  // Filter States
   const [hostType, setHostType] = useState<'Volunteer' | 'Paid' | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<LocationOption[]>([]);
-  //const [hosts, setHosts] = useState<Host[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [filteredHosts, setFilteredHosts] = useState<Host[]>([]);
@@ -120,14 +38,12 @@ const HostListing: React.FC = () => {
   // Parse query params from URL on component mount
   useEffect(() => {
     const { result, newHistoryItem } = routeLocation.state || {};
-    // whichever one is non-undefined:
     const incoming = newHistoryItem ?? result;
   
     console.log('incoming object →', incoming);
     console.log('incoming.label    →', incoming?.label);
   
     if (incoming) {
-      // destructure exactly what you need
       const {
         country,
         province,
@@ -136,6 +52,15 @@ const HostListing: React.FC = () => {
         label,
         isManualSearch
       } = incoming;
+
+      fetchHosts({
+        country,
+        province,
+        city,
+        value,
+        label,
+        isManualSearch
+      })
   
       handleLocationSelect({
         country,
@@ -145,6 +70,7 @@ const HostListing: React.FC = () => {
         label,
         isManualSearch
       });
+
     } else {
       // no incoming filters
       fetchHosts(activeFilters);
@@ -169,7 +95,6 @@ const HostListing: React.FC = () => {
         const data = await response.json();
         if (Array.isArray(data)) {
           setFilteredHosts(data);
-          //setHosts(data);
         } else {
           console.error('Unexpected response format:', data);
           setFilteredHosts([]);
@@ -211,7 +136,7 @@ const HostListing: React.FC = () => {
       city:     location.city
     });
   
-    // — NEW: build the full filters object and fetch immediately —
+    //— NEW: build the full filters object and fetch immediately —
     const newFilters: Filter = {
       country:  location.country,
       province: location.province,
@@ -227,7 +152,7 @@ const HostListing: React.FC = () => {
     setActiveFilters(newFilters);
   
     // fire the query
-    fetchHosts(newFilters);
+    //fetchHosts(newFilters);
   };
   
   const handleLanguageChange = (selected: any) => {
@@ -242,6 +167,8 @@ const HostListing: React.FC = () => {
       province: selectedLocation.province || undefined,
       city: selectedLocation.city || undefined,
     } : pendingLocationFilter;
+
+    console.log(locationFilters)
   
     const newFilters = {
       ...locationFilters,
@@ -255,7 +182,6 @@ const HostListing: React.FC = () => {
     // Fetch hosts with new filters
     fetchHosts(newFilters);
 
-    //console.log(newFilters)
   };
 
   const clearFilters = () => {
@@ -293,9 +219,12 @@ const HostListing: React.FC = () => {
     if (activeFilters.type) {
       parts.push(activeFilters.type === 'Paid' ? 'Paid Hosts' : 'Volunteer Hosts');
     }
-    
-    if (selectedLocation) {
-      parts.push(`in ${selectedLocation.city?.label || selectedLocation.province?.label || selectedLocation.country?.label }`); //update if wrong
+    console.log(selectedLocation)
+    if (
+      selectedLocation &&
+      (selectedLocation.country?.label || selectedLocation.province?.label || selectedLocation.city?.label)
+    ) {
+      parts.push(`in ${selectedLocation.city?.label || selectedLocation.province?.label || selectedLocation.country?.label}`);
     }
     
     if (activeFilters.languages.length > 0) {
@@ -328,7 +257,6 @@ const HostListing: React.FC = () => {
             </div>
             <AdvancedLocationSearch 
               onSelect={handleLocationSelect}
-              //initialValue={selectedLocation}
             />
           </div>
           

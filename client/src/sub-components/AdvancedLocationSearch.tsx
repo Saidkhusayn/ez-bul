@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { LocationOption } from '../utilities/props';
 const GEONAMES_ID = import.meta.env.VITE_GEONAMES_ID;
-
-interface LocationOption {
-  value: string;
-  label: string;
-}
 
 interface AdvancedLocationSearchProps {
   onSelect: (location: {

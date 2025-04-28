@@ -1,58 +1,60 @@
 // HostCard.tsx
 import React from 'react';
 import { Host } from '../utilities/props';
-import languages from "../assets/languages.json";
 
-const HostCard: React.FC<{ host: Host }> = ({ host }) => {
-  const getLanguageNames = () => {
-    return host.languages
-      .map(code => languages.find(l => l.code === code)?.name || code)
-      .join(', ') || 'Not specified';
-  };
+interface HostCardProps {
+  host: Host;
+}
 
-  return (
-    <div className="host-card">
-      <div className="host-header">
-        <div className="host-avatar">
-          {host.profilePicture ? (
-            <img src={host.profilePicture} alt={host.name} />
-          ) : (
-            <div className="avatar-placeholder">
-              {host.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="host-info">
-          <h3>{host.name}</h3>
-          <span className="rate-badge">
-            {host.type === 'Paid' ? `$${host.rate}/hr` : 'Volunteer'}
-          </span>
-        </div>
-      </div>
-
-      <div className="host-details">
-        <div className="detail-row">
-          <span>Speaks:</span>
-          <span>{getLanguageNames()}</span>
-        </div>
-        
-        {(host.city || host.province || host.country) && (
-          <div className="detail-row">
-            <span>Location:</span>
-            <span>
-              {[host.city, host.province, host.country].filter(Boolean).join(', ')}
-            </span>
+const HostCard: React.FC<HostCardProps> = ({ host }) => (
+  <div className="host-card">
+    <div className="host-header">
+      <div className="host-avatar">      
+        {host.profilePicture ? (     
+            <img 
+              src={host.profilePicture} 
+              alt={host.name} 
+            />                     
+        ) : (
+          <div className="avatar-placeholder">
+            {(host.name || host.name).charAt(0).toUpperCase()}
           </div>
         )}
       </div>
-
-      <p className="host-bio">{host.bio || 'No description available'}</p>
-
-      {host.open === 'Yes' && (
-        <div className="status-badge">Accepting Guests</div>
+      <div className="host-info">
+        <h3 className="host-name">{host.name}</h3>
+        <span className="response-time">{host.type === "Paid" ? ("$" + host.rate + " p/h") : (host.type) }</span>
+      </div>
+    </div>
+    
+    <div className="host-stats">
+     
+      <div className="stat-item">
+        <span className="stat-label">Speaks:</span>
+        <span className="stat-value">
+          {host.languages?.length > 0 
+            ? host.languages.map(lang => lang.label).join(', ') 
+            : 'No languages specified'}
+        </span>
+      </div>
+      {host.country && (
+        <div className="stat-item">
+          <span className="stat-label">Location:</span>
+          <span className="stat-value">
+            {host.city?.label ? `${host.city.label}, ` : ''}
+            {host.province?.label ? `${host.province.label}, ` : ''}
+            {host.country.label}
+          </span>
+        </div>
       )}
     </div>
-  );
-};
+
+    <p className="host-description">{host.bio || 'No description available'}</p>
+    
+    {host.open === 'Yes' && (
+      <button className="status-badge accepting">Accepting Guests</button>
+    )}
+  </div>
+);
 
 export default HostCard;

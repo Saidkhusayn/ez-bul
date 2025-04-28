@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // Define a reusable schema for option objects
 const OptionSchema = new mongoose.Schema({
-  value: { type: String, required: true },
+  value: { type: String, required: true }, //why string make it number
   label: { type: String, required: true }
 }, { _id: false });
 

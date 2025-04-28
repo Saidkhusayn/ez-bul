@@ -110,7 +110,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         city: undefined,
         isManualSearch: true
       };
-
+      
       // Update search history
       setHistory(prev => [
         newHistoryItem,

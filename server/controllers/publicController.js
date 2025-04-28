@@ -1,6 +1,8 @@
+require('dotenv').config();
 const UserModel = require("../models/Users");
 const axios = require('axios');
 const BASE_URL = 'http://api.geonames.org';
+const GEONAMES_USERNAME = process.env.GEONAMES_USERNAME;
 
 const searchUsers = async(req, res) => {
     try{
@@ -51,52 +53,25 @@ const viewUser = async (req, res) => {
         res.status(500).json({ error: "Failed to get user object", details: err.message });
       }
   };
-
-  async function getAdmin1Id({ cityId, username }) {
-    if (!cityId) throw new Error('cityId is required');
-    if (!username) throw new Error('GeoNames username is required');
-  
-    try {
-      // FETCH the full hierarchy for the city
-      const response = await axios.get(`${BASE_URL}/hierarchyJSON`, {
-        params: { geonameId: cityId, username }
-      });
-  
-      const nodes = response.data.geonames || [];
-      // Find the admin1 entry (feature code 'ADM1')
-      const adm1 = nodes.find(node => node.fcode === 'ADM1');
-  
-      if (!adm1) {
-        console.error(`No ADM1 parent found for cityId ${cityId}`);
-        return cityId; // FALLBACK: return cityId itself if no parent found
-      }
-  
-      return adm1.geonameId;
-    } catch (err) {
-      console.warn(`Hierarchy lookup failed for ${cityId}:`, err.message);
-      return  // FALLBACK on error
-    }
-  }
   
   const searchLocations = async (req, res) => {
     try {
       const rawQuery = req.query.query?.trim().toLowerCase();
-      if (!rawQuery) return res.json([]); // RETURN 200 empty array on empty query
+      if (!rawQuery) return res.json([]); 
   
       const response = await axios.get(`${BASE_URL}/searchJSON`, {
         params: {
           q: rawQuery,
           maxRows: 40,
-          username: 'javabek',
+          username: GEONAMES_USERNAME,
           featureClass: ['A', 'P'],
-          style: 'LONG',
+          style: 'FULL',
           orderby: 'relevance',
         },
       });
   
       const geonames = response?.data?.geonames;
       if (!Array.isArray(geonames)) {
-        // RETURN 200 empty array instead of 500
         return res.json([]);
       }
   
@@ -143,7 +118,7 @@ const viewUser = async (req, res) => {
       // STEP 3: Dedupe and take top 7 BEFORE calling hierarchy endpoint
       const topUnique = sorted
         .filter((loc, i, arr) => arr.findIndex(x => x.name === loc.name) === i)
-        .slice(0, 7);
+        .slice(0, 5);
   
       // STEP 4: Format labels (only up to 7 calls to getAdmin1Id)
       const mappedWithLabels = await Promise.all(
@@ -161,8 +136,8 @@ const viewUser = async (req, res) => {
           const partsFull = [{ value: location.geonameId, label: location.name }];
   
           if (isCityOrOther && location.adminName1) {
-            const admin1Id = await getAdmin1Id({ cityId: location.geonameId, username: 'javabek' });
-            partsFull.push({ value: admin1Id, label: location.adminName1 });
+            //const admin1Id = `${location.countryCode}-${location.adminCode1}`;
+            partsFull.push({ value: location.adminId1, label: location.adminName1 });
 
           } else if (isProvince) {
             partsFull.push({ value: location.geonameId, label: location.name });
@@ -204,18 +179,20 @@ const viewUser = async (req, res) => {
         city,
         languages,
         type,
-        isManualSearch,  // boolean set by your front end for manual queries
-        value,           // encodedQuery for manual searches
-        label            // user’s raw text for manual searches
+        isManualSearch,  
+        value,       
+        label 
       } = req.body;
+
+      const { page = 1, limit = 10 } = req.body; // default page 1 and limit 10
   
       // Base filter: only hosts who are open
       const baseFilter = { open: 'Yes' };
   
       // 2. If this was a manual search, ignore the .value filters
       if (isManualSearch) {
-        // Decide which text to use
         const searchText = (label || (value ? decodeURIComponent(value) : '')).trim();
+        console.log(searchText)
         if (!searchText) return res.json([]);
   
         // Build an exact‐match, case‐insensitive regex
@@ -255,7 +232,9 @@ const viewUser = async (req, res) => {
   
       const hosts = await UserModel
         .find(query)
-        .select('-password -__v');
+        .select('-password -__v')
+        .skip((page - 1) * limit)
+        .limit(limit);
   
       return res.json(hosts);
     } catch (err) {
@@ -269,6 +248,4 @@ const viewUser = async (req, res) => {
   
   
   
-
-
 module.exports = { searchUsers, viewUser, searchLocations, getFilteredHosts }
