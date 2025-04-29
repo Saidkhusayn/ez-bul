@@ -4,7 +4,7 @@ const { generateToken, generateRefreshToken } = require("../utils/generateToken"
 
 const registerUser = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, name, birthday, bio, country, province, city, languages, open, type, rate } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists!" });
@@ -15,7 +15,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create and save the new user
-    const newUser = new User({ username, email, password: hashedPassword });
+    const newUser = new User({ username, email, password: hashedPassword, name, birthday, bio, country, province, city, languages, open, type, rate });
     await newUser.save();
 
     // Generate and return a token
@@ -57,6 +57,24 @@ const loginUser = async (req, res) => {
   }
 };
 
+const isUsernameTaken = async(req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Query your database to check if the username exists
+    const existingUser = await User.findOne({ username: username.toLowerCase() });
+    
+    // Return the availability status
+    res.json({ 
+      available: !existingUser,
+      message: existingUser ? "Username is already taken" : "Username is available"
+    });
+  } catch (error) {
+    console.error("Error checking username:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
 const logout = (req, res) => {
   res.clearCookie("refreshToken", { 
     httpOnly: true,
@@ -67,4 +85,4 @@ const logout = (req, res) => {
 };
 
 
-module.exports = { registerUser, loginUser, logout };
+module.exports = { registerUser, loginUser, isUsernameTaken, logout };

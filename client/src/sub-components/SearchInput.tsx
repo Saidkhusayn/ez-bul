@@ -5,11 +5,6 @@ import DismissableOverlay from './DismissableOverlay';
 import { Search, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// interface LocationOption{
-//   value: string;
-//   label: string;
-// }
-
 export interface SearchResult {
   id: number;
   label: string, 
@@ -37,7 +32,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onSelect,
   searchType,
 }) => {
-  // Search states
+
+  // Search states 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [history, setHistory] = useState<SearchResult[]>([]);
@@ -132,21 +128,16 @@ const SearchInput: React.FC<SearchInputProps> = ({
 
     setHistory(prev => [
       result,
-      ...prev.filter(item => item.id !== result.id) //fix this there is something wrong with the id
+      ...prev.filter(item => item.id !== result.id) 
     ].slice(0, 5));
     
     // Navigate to either custom onSelect or default search route
     if (onSelect) {
-      console.log(result)
       onSelect(result);
     } else {
       navigate(`/search/${searchType}/${encodeURIComponent(result.value)}`);
     }
   };
-
-  useEffect (() => {
-    //console.log(history)
-  })
 
 
 
@@ -167,7 +158,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
         <button 
           className="search-btn" 
           type="button"
-          onClick={handleSearch}
+          onClick={ handleSearch }
         >
           <Search size={18} />
         </button>

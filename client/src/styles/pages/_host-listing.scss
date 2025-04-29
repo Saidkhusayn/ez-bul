@@ -1,0 +1,274 @@
+/* Host Listing Container */
+.listing-container {
+  display: flex;
+  gap: $spacer-md;
+  padding: $spacer-md;
+  background: $background-light;
+  min-height: 100vh;
+}
+
+/* Filters Sidebar */
+.filters-sidebar {
+  margin-top: 60px;
+  position: sticky;
+  
+  .filter-section {
+    @include card($spacer-sm, $border-radius-sm);
+    border: $border-base;
+    max-width: 350px;
+    min-width: 300px;
+    width: 100%;
+  }
+
+  .filter-title {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $text-dark;
+    margin-bottom: $spacer;
+    padding-bottom: $spacer-xs;
+    border-bottom: $border-base;
+  }
+
+  .filter-group {
+    margin-bottom: $spacer-md;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .filter-label {
+    display: block;
+    font-weight: $font-weight-normal;
+    color: $text-dark;
+    margin-bottom: $spacer-xs;
+  }
+
+  .advanced-search {
+    border-radius: 8px;
+  
+    .dropdown-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px; 
+  
+      .select-container {
+        display: flex;
+        flex-direction: column;
+  
+        select {
+          padding: 4px;
+          border: $border-base;
+  
+          &:focus {
+            outline: none;
+            border-color: $primary;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+          }
+        }
+      }
+    }
+  }
+
+  .radio-item {
+    @include flex-center(row, center, flex-start);
+    gap: $spacer-xs;
+    font-size: $font-size-base;
+    cursor: pointer;
+    position: relative;
+    padding: $spacer-xxs 0;
+
+    input {
+      opacity: 0;
+      position: absolute;
+
+      &:checked + .radio-mark {
+        background-color: $primary;
+        border-color: $primary;
+        
+        &::after {
+          content: '';
+          display: block;
+          position: absolute;
+          left: 5px;
+          top: 2px;
+          width: 4px;
+          height: 8px;
+          border: solid $white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+      }
+    }
+
+    .radio-mark {
+      @include flex-center;
+      width: 16px;
+      height: 16px;
+      border: 1px solid $border-color;
+      border-radius: 50%;
+      position: relative;
+      transition: all 0.2s;
+    }
+  }
+
+  .language-select {
+    @include input-card(0, $border-radius-xs);
+    width: 100%;
+
+    .select__control {
+      border: none;
+      box-shadow: none;
+      min-height: auto;
+      flex-wrap: wrap; 
+      align-items: flex-start;
+    }
+  
+    .select__value-container {
+      flex-wrap: wrap; 
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+  
+    .select__multi-value {
+      margin: 2px; 
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacer-xs;
+    margin-top: $spacer-md;
+  }
+
+}
+
+/* Hosts List */
+.hosts-list {
+  flex: 1;
+  max-width: 800px;
+
+  .results-header {
+    margin-bottom: $spacer-md;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+    
+    .results-count {
+      font-size: $font-size-md;
+      font-weight: $font-weight-bold;
+      display: flex;
+      align-items: center;
+      margin: 0;
+    }
+  }
+
+  .pagination-controls{
+    @include flex-center(row, center, center);
+    gap: 24px;
+    padding: 8px;
+   
+  }
+
+  .loading {
+    @include flex-center;
+    padding: $spacer-md;
+    color: $text-light;
+  }
+}
+
+/* Host Card */
+.host-card {
+  @include card($spacer-sm, $border-radius-sm);
+  margin-bottom: $spacer-sm;
+  border: $border-base;
+
+  .host-header {
+    display: flex;
+    align-items: center;
+    gap: $spacer-sm;
+    margin-bottom: $spacer;
+
+    .host-avatar {
+      @include chat-avatar(56px, 56px);
+    }
+
+    .host-info {
+      flex: 1;
+      
+      .host-name {
+        font-size: $font-size-base + 1;
+        font-weight: $font-weight-bold;
+        margin: 0;
+        color: $text-dark;
+      }
+
+      .response-time {
+        font-size: $font-size-sm;
+        color: $text-light;
+        
+        &.paid {
+          color: $success;
+          font-weight: $font-weight-normal;
+        }
+      }
+    }
+  }
+
+  .host-stats {
+    display: grid;
+    gap: $spacer-sm;
+    margin-bottom: $spacer;
+
+    .stat-item {
+      display: flex;
+      gap: $spacer-xs;
+
+      .stat-label {
+        @extend %span-light;
+        flex: 0 0 80px;
+      }
+
+      .stat-value {
+        font-weight: $font-weight-normal;
+        color: $text-dark;
+      }
+    }
+  }
+
+  .host-description {
+    color: $text-light;
+    line-height: 1.5;
+    margin-bottom: $spacer;
+  }
+
+  .status-badge {
+    &.accepting {
+      @include button-variant(rgba($online, 0.1), darken($online, 10%));
+      font-size: $font-size-sm;
+      padding: $spacer-xxs $spacer-xs;
+      border-radius: $border-radius-lg;
+    }
+  }
+}
+
+.no-results {
+  @include card;
+  text-align: center;
+  padding: $spacer-md;
+  color: $text-light;
+}
+
+.primary-button {
+  @include button-variant($primary, $white);
+}
+
+.secondary-button {
+  @include button-variant(transparent, $primary);
+  border: $border-base;
+}
+
+.arrow-icon-btn{
+  @extend %icon-btn-base;
+}

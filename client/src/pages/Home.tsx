@@ -31,7 +31,6 @@ const Home = () => {
     data.map(loc => {
       const full = loc.locationArr;
       let country, province, city;
-      console.log(loc)
   
       if (loc.type === 'country') {
         country = full[0];
@@ -55,7 +54,6 @@ const Home = () => {
     });
   
   const handleSearchSelect = (result: SearchResult) => {
-    console.log(result) //right
     navigate(`/host-listing`, { state: {result} }); 
   };
 

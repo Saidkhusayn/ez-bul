@@ -11,7 +11,7 @@ const Profile = () => {
   const { displayChat, sidebarOpen, toggleSidebar } = useUI();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [profile, setProfile] = useState({  
     _id: "",
@@ -44,7 +44,7 @@ const Profile = () => {
         }
         
         const data = await response.json();
-        console.log("Profile data received:", data);
+        //console.log("Profile data received:", data);
         
         // Handle both formats - if data is the user object directly or if it's wrapped in a user property
         const userData = data.user || data;

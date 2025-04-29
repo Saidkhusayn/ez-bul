@@ -31,7 +31,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
 
-  // When a chat is selected, show the chat window and hide contacts.
+  // When a chat is selected, show the chat window and hide contacts
   const displayChat = (id: string) => {
     setChat({ isVisible: true, selectedReceiver: id });
     setShowContacts(false);

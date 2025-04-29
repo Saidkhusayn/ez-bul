@@ -13,7 +13,7 @@ interface ValidationError {
 
 interface FormFieldProps {
   label: string;
-  value: any; // Changed to any to handle more complex types
+  value: any; // Changed to any to handle more complex types console
   type?: "text" | "date" | "number" | "select" | "multiselect" | "email";
   onChange: (newValue: any) => void;
   options?: Option[];

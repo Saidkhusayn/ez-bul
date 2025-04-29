@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoggedIn, setIsLoggedIn ] = useState<boolean>(false)
 
    
-  // Set token and userId
+  // Set token and userId 
   useEffect(() => {
     if (token) {
       try {

@@ -26,7 +26,6 @@ const Header = () => {
     }));
 
     const handleSearchSelect = (result: SearchResult) => {
-      // Access username from the result object
       navigate(`/profile/${result.username}`); 
     };
 
@@ -41,7 +40,6 @@ const Header = () => {
           <ul className="nav-list">
             <li className="nav-item" onClick={() => navigate("/")}>Home</li>
             <li className="nav-item" onClick={() => navigate("/host-listing")}>Hosts</li>
-            <li className="nav-item">Resources</li>
           </ul>
         </div>
 

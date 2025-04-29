@@ -76,7 +76,7 @@ const ProfileEdit: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  //@ts-ignore
+  //@ts-ignore console
   const alertTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleFieldChange = (field: string, newValue: any) => {
@@ -179,7 +179,6 @@ const ProfileEdit: React.FC = () => {
           method: "POST",
           body: formData,
         });
-        console.log(data.url);
         setProfile((prev) => ({ ...prev, profilePicture: data.url }));
         setDirtyFields((prev) => ({ ...prev, profilePicture: true }));
         setSaveStatus({ success: true, message: "Profile picture updated successfully!" });
@@ -353,11 +352,11 @@ const ProfileEdit: React.FC = () => {
       }
     }
 
-    console.log("Dirty Payload:", payload);
+    //console.log("Dirty Payload:", payload);
 
     const token = localStorage.getItem("token");
     if(!token){
-        console.log("You don't have token and you go to public view");
+        //console.log("You don't have token and you go to public view");
         setSaveStatus({ success: false, message: "Authentication failed. Please log in again." });
         return;
     }

@@ -14,7 +14,7 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
   onSelect,
 }) => {
 
-  // Location Options States
+  // Location Options States 
   const [countryOptions, setCountryOptions] = useState<LocationOption[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<LocationOption[]>([]);
   const [cityOptions, setCityOptions] = useState<LocationOption[]>([]);
