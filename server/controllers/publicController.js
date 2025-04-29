@@ -27,7 +27,7 @@ const searchUsers = async(req, res) => {
 const viewUser = async (req, res) => {
     try {
         const identifier = req.params.username;
-        console.log("Looking up user with identifier:", identifier);
+        //console.log("Looking up user with identifier:", identifier);
         
         // Check if the identifier is a valid MongoDB ObjectId
         const ObjectId = require('mongoose').Types.ObjectId;
@@ -45,7 +45,7 @@ const viewUser = async (req, res) => {
           return res.status(404).json({ error: "User not found" });
         }
         
-        console.log("Found user:", user);
+        //console.log("Found user:", user);
         res.json(user);
         
       } catch (err) {

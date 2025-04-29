@@ -12,6 +12,7 @@ dist
 .env
 dist-ssr
 *.local
+Dockerfile.dev
 
 # Editor directories and files
 .vscode/*

@@ -19,7 +19,7 @@ const uploadProfilePicture = async(req, res) => {
 };
 
 const editProfile = async (req, res) => {
-    console.log("Edit profile endpoint hit", req.method, req.url);
+    //console.log("Edit profile endpoint hit", req.method, req.url);
     try {
       const userId = req.user.id;
       const allowedFields = [
