@@ -20,8 +20,7 @@ const io = setupSocket(server);
 
 // CORS configuration
 const corsOptions = {
-  origin:  "http://localhost:5173" //process.env.FRONTEND_URL
-  , 
+  origin: process.env.FRONTEND_URL, 
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
