@@ -25,13 +25,14 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 };
+console.log(process.env.FRONTEND_URL)
 
 // Storing io instances
 app.set("io", io);
 app.set("users", io.users); 
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); 
 app.use(cookieParser());
 
