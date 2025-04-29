@@ -102,6 +102,7 @@ const HostListing: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
+      console.log(new Request(`${import.meta.env.VITE_API_URL}/hosts`).url);
 
       if (response.ok) {
         const data: HostsResponse = await response.json();
