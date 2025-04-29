@@ -1,9 +1,11 @@
+@use "sass:color";
+
 @import './utils/variables';
 @import './utils/mixins';
 @import './utils/base';
 
 @import './pages/home';
-@import './pages/profile.scss';
+@import './pages/profile';
 @import './pages/host-listing';
 
 @import './components/header';

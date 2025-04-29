@@ -245,7 +245,7 @@
 
   .status-badge {
     &.accepting {
-      @include button-variant(rgba($online, 0.1), darken($online, 10%));
+      @include button-variant(rgba($online, 0.1), color.adjust($online, $lightness: -10%));
       font-size: $font-size-sm;
       padding: $spacer-xxs $spacer-xs;
       border-radius: $border-radius-lg;
