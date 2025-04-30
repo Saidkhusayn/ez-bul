@@ -23,17 +23,15 @@ const corsOptions = {
   origin: [process.env.FRONTEND_URL, 'https://ez-bul-production.up.railway.app'],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
-  //allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
-
-app.use(cors());
 
 // Storing io instances
 app.set("io", io);
 app.set("users", io.users); 
 
 // Middleware
-//app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); 
 app.use(cookieParser());
 

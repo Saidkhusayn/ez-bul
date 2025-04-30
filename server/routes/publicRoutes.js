@@ -1,7 +1,14 @@
 const express = require('express');
 const { searchUsers, viewUser, searchLocations, getFilteredHosts } = require("../controllers/publicController");
+const cors = require('cors');
+require('dotenv').config();
 
 const router = express.Router();
+
+router.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  }));
 
 
 router.get("/search", searchUsers);
