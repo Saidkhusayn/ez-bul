@@ -97,7 +97,7 @@ const HostListing: React.FC = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/hosts`, {
         method: 'POST',
-        mode: 'cors',
+        //mode: 'cors',
         body: JSON.stringify({ ...filters, page: currentPage, limit }),
         headers: {
           'Content-Type': 'application/json'

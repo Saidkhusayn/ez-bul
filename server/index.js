@@ -36,12 +36,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 
 // Add basic security headers
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('X-Frame-Options', 'DENY');
-  next();
-});
+// app.use((req, res, next) => {
+//   res.setHeader('X-Content-Type-Options', 'nosniff');
+//   res.setHeader('X-XSS-Protection', '1; mode=block');
+//   res.setHeader('X-Frame-Options', 'DENY');
+//   next();
+// });
 
 // Routes
 app.use("/", cors(corsOptions), require("./routes/refreshToken"));
