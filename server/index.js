@@ -44,11 +44,11 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use("/", require("./routes/refreshToken"));
-app.use("/", require("./routes/publicRoutes"));
-app.use("/auth", require("./routes/authRoutes"));
-app.use("/chats", require("./routes/chatsRoute"));
-app.use("/profile", require("./routes/profileRoutes"));
+app.use("/", cors(corsOptions), require("./routes/refreshToken"));
+app.use("/", cors(corsOptions), require("./routes/publicRoutes"));
+app.use("/auth", cors(corsOptions), require("./routes/authRoutes"));
+app.use("/chats", cors(corsOptions), require("./routes/chatsRoute"));
+app.use("/profile", cors(corsOptions), require("./routes/profileRoutes"));
 
 
 // Default route
