@@ -19,15 +19,11 @@ const server = http.createServer(app);
 const io = setupSocket(server); 
 
 // CORS configuration
-const allowedOrigins = ['http://localhost:5173'];
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.FRONTEND_URL, 
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
 
 // Storing io instances
