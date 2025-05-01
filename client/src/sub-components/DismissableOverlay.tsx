@@ -3,12 +3,12 @@ import { forwardRef } from 'react';
 type DismissableOverlayProps = {
   children: React.ReactNode;
   isOpen: boolean;
-  onClose: () => void;
+  onClose: () => void; //this is not used, fix this
   className?: string;
 };
 
 const DismissableOverlay = forwardRef<HTMLDivElement, DismissableOverlayProps>(
-  ({ children, isOpen, onClose, className }, ref) => {
+  ({ children, isOpen, className }, ref) => {
     if (!isOpen) return null;
 
     return (

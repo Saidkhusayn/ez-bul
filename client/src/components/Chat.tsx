@@ -52,7 +52,7 @@ const Chat: React.FC<ChatProps> = ({ receiverId }) => {
   const [isTyping, setIsTyping] = useState(false); //taste if it is working and how
   const [receiverIsTyping, setReceiverIsTyping] = useState(false);
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0); //fix this or implement this in chatLists
+  const [_unreadCount, setUnreadCount] = useState(0); //fix this or implement this in chatLists
 
   const messageActionsDisclosure = useDisclosure();
 
