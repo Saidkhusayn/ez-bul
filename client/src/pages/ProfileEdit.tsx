@@ -243,7 +243,7 @@ const ProfileEdit: React.FC = () => {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
+        const res = await fetch(`https://secure.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
         if (res.ok) {
           const data = await res.json();
           const options: Option[] = data.geonames.map((country: any) => ({
@@ -274,7 +274,7 @@ const ProfileEdit: React.FC = () => {
         if(profile.country?.value){
           const countryValue = profile.country.value;
           const res = await fetch(
-           `http://api.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
+           `https://secure.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -311,7 +311,7 @@ const ProfileEdit: React.FC = () => {
         if(profile.province?.value){
           const provinceValue = profile.province.value;
           const res = await fetch(
-            `http://api.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
+            `https://secure.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
           );
           if (res.ok) {
             const data = await res.json();

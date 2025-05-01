@@ -379,7 +379,7 @@ const Login: React.FC<LoginProps> = ({ isStandalone = false, onLoginSuccess }) =
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
+        const res = await fetch(`https://secure.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
         if (res.ok) {
           const data = await res.json();
           const options: Option[] = data.geonames.map((country: any) => ({
@@ -409,7 +409,7 @@ const Login: React.FC<LoginProps> = ({ isStandalone = false, onLoginSuccess }) =
         if (!countryValue) return;
         
         const res = await fetch(
-          `http://api.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
+          `https://secure.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
         );
         
         if (res.ok) {
@@ -444,7 +444,7 @@ const Login: React.FC<LoginProps> = ({ isStandalone = false, onLoginSuccess }) =
         if (!provinceValue) return;
         
         const res = await fetch(
-          `http://api.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
+          `https://secure.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
         );
         
         if (res.ok) {

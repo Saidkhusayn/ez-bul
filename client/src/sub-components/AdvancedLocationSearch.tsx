@@ -34,7 +34,7 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
     const fetchCountries = async () => {
       setIsLoadingCountries(true);
       try {
-        const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
+        const res = await fetch(`https://secure.geonames.org/countryInfoJSON?username=${GEONAMES_ID}`);
         if (res.ok) {
           const data = await res.json();
           const options: LocationOption[] = data.geonames.map((country: any) => ({
