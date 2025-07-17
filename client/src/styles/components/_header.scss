@@ -2,62 +2,73 @@
     background-color: $white;
     padding: $spacer-sm 0;
     box-shadow: $shadow-sm;
+    position: sticky;
+    top: 0;
+    z-index: 4;
   
     .header-container {
-        max-width: 1200px;
+        width: 100%;
         margin: 0 auto;
-        padding: 0 $spacer;
+        padding: 0 $spacer-lg;
         @include flex-center(row);
         justify-content: space-between;
+        gap: $spacer-sm;
 
-        .logo{
-            font-size: 32px;
+        .logo {
+            font-size: clamp(24px, 4vw, 32px);
             font-weight: 800;
             cursor: pointer;
+            flex-shrink: 0;
+            
+            .logo-text {
+                white-space: nowrap;
+            }
         }
 
-        .nav-menu{
+        .nav-menu {
             flex-grow: 1;
             margin-left: 40px;
 
-            .nav-list{
+            .nav-list {
                 @extend %list-base;
                 display: flex;
+                gap: $spacer * 1.875;
 
-                .nav-item{
-                    margin-right: $spacer * 1.875;
+                .nav-item {
                     font-size: $font-size-base + 1;
                     font-weight: $font-weight-normal;
                     padding: $spacer-xs 0;
                     cursor: pointer;
                     transition: ease-in-out 0.3s;
+                    white-space: nowrap;
 
-                    &:hover{
+                    &:hover {
                         opacity: 0.5;
                     }
                 }
             }
         }
 
-        .header-right{
-            @include flex-center; /* Add gap space later transition*/
+        .header-right {
+            @include flex-center;
+            gap: $spacer-sm;
+            flex-shrink: 0;
 
-            .search-form{
+            .search-form { //search
                 position: relative;
-                margin-right: 15px;
                 
-                .search-input{
+                .search-input {
                     @include input-card($spacer-xs $spacer-sm, $border-radius: $border-radius-lg);
                     width: 180px;
                     padding-right: 40px;
                     transition: all 0.3s;
                 
                     &:focus {
-                      width: 220px;
+                        width: 220px;
                     }
                 }
 
-                .search-btn{
+                .search-btn {
                     @extend %icon-btn-base;
                     position: absolute;
                     right: 10px;
@@ -66,49 +77,53 @@
                     color: $text-light;  
                 }
 
-                .search-dropdown{
+                .search-dropdown {
                     @extend %dropdown;
                     padding: 5px 10px;
                     min-width: 200px;
                     left: $spacer-xs;
 
-                    .history-item{
-                        svg{
-                         margin-right: 4px;
+                    .history-item {
+                        svg {
+                            margin-right: 4px;
                         }
                     }
                 }
             }
             
-            .user-icons{
+            .user-icons {
                 display: flex;
                 align-items: center;
-                position: relative;   
+                position: relative;
+                gap: $spacer-sm;
 
-                .chat-icon{
-                    .icon-btn{
+                .chat-icon {
+                    .icon-btn {
                         @extend %icon-btn-base;
                     }
                 }
 
-                .profile-btn{
+                .profile-btn {
                     @extend %icon-btn-base;
-                    margin: 0 $spacer-sm;
+                    display: flex;
+                    align-items: center;
+                    gap: $spacer * 0.25;
 
-                    .profile-name{
-                        margin-left: $spacer * 0.25;
+                    .profile-name {
+                        white-space: nowrap;
                     }
                 }
 
-                .sign-btn{
+                .sign-btn {
                     @include button-variant($black, $white);
+                    white-space: nowrap;
 
-                    &:hover{
+                    &:hover {
                         opacity: 0.8;
-                      }
+                    }
                 }
 
-                .profile-dropdown{
+                .profile-dropdown {
                     @extend %dropdown;
                     padding: 5px 10px;
                     top: $spacer-md;
@@ -116,6 +131,162 @@
                 }
             }
         }
-
     }
-  }
+
+    // Mobile menu toggle (hamburger)
+    .mobile-menu-toggle {
+        display: none;
+        @extend %icon-btn-base;
+        flex-direction: column;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        
+        span {
+            width: 20px;
+            height: 2px;
+            background-color: $black;
+            transition: 0.3s;
+            margin: 2px 0;
+        }
+        
+        &.active {
+            span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+            span:nth-child(2) {
+                opacity: 0;
+            }
+            span:nth-child(3) {
+                transform: rotate(-45deg) translate(7px, -6px);
+            }
+        }
+    }
+
+    // Mobile navigation overlay
+    .mobile-nav-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: none;
+        
+        &.active {
+            display: block;
+        }
+    }
+
+    .mobile-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 280px;
+        height: 100vh;
+        background-color: $white;
+        box-shadow: $shadow-lg;
+        z-index: 1000;
+        transition: right 0.3s ease;
+        overflow-y: auto;
+        
+        &.active {
+            right: 0;
+        }
+        
+        .mobile-nav-header {
+            padding: $spacer-md;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            .mobile-nav-title {
+                font-size: 18px;
+                font-weight: 600;
+            }
+            
+            .mobile-nav-close {
+                @extend %icon-btn-base;
+            }
+        }
+        
+        .mobile-nav-content {
+            padding: $spacer-md;
+            
+            .mobile-nav-list {
+                @extend %list-base;
+                margin-bottom: $spacer-md;
+                
+                .mobile-nav-item {
+                    padding: $spacer-sm 0;
+                    border-bottom: 1px solid #f0f0f0;
+                    cursor: pointer;
+                    font-size: 16px;
+                    transition: background-color 0.3s;
+                    
+                    &:hover {
+                        background-color: #f8f9fa;
+                    }
+                    
+                    &:last-child {
+                        border-bottom: none;
+                    }
+                }
+            }
+        }
+    }
+
+    // Responsive breakpoints
+    @media (max-width: 768px) {
+        padding: $spacer-xs 0;
+        
+        .header-container {
+            padding: 0 $spacer-md;
+            
+            .nav-menu {
+                display: none;
+            }
+            
+            .header-right {
+                .search-form {
+                    display: none;
+                }
+                
+                .user-icons {
+                    gap: $spacer-xs;
+                    
+                    .profile-btn {
+                        .profile-name {
+                            display: none;
+                        }
+                    }
+                }
+            }
+            
+            .mobile-menu-toggle {
+                display: flex;
+            }
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .header-container {
+            padding: 0 $spacer-sm;
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .user-icons {
+                .chat-icon,
+                .profile-btn {
+                    .icon-btn {
+                        padding: $spacer-xs;
+                    }
+                }
+            }
+        }
+    }
+}

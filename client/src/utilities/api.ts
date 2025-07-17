@@ -15,8 +15,8 @@ export const fetchWithAuth = async (url: string, options: FetchOptions = {}): Pr
 
   // Build headers differently based on the body type
   let baseHeaders: HeadersInit = {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
     ...options.headers,
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
   };
 
   if (!isFormData) {
@@ -30,7 +30,7 @@ export const fetchWithAuth = async (url: string, options: FetchOptions = {}): Pr
       headers: baseHeaders,
     });
 
-    if (response.status === 403) {
+    if (response.status === 401) {
       const refreshResponse = await fetch(`${API_URL}/refresh`, {
         method: "POST",
         credentials: "include",
@@ -46,8 +46,8 @@ export const fetchWithAuth = async (url: string, options: FetchOptions = {}): Pr
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
             ...options.headers,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
       } else {

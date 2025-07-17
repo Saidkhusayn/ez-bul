@@ -5,6 +5,8 @@ import Sidebar from '../components/Sidebar';
 import Login from '../components/LoginBox';
 import { useNavigate } from 'react-router-dom';
 import { SearchResult } from '../sub-components/SearchInput';
+import mapImage from '../assets/earth.png'
+import planeImg from '../assets/plane.png'
 
 interface RawLocation {
   id: number;
@@ -63,14 +65,15 @@ const Home = () => {
         <div className="hero-content">
           <h1 className="hero-title">
             <span className="title-highlight">Payroll</span>
-            <br />for global teams
+            <br />
+            for global teams
           </h1>
           <p className="hero-description">
             Deel helps tens of thousands of companies expand globally with unmatched speed,
             flexibility and compliance.
           </p>
           <div className="hero-search">
-          <SearchInput
+            <SearchInput
               onSelect={handleSearchSelect}
               endpoint="/search/locations"
               placeholder="Search Locations..."
@@ -81,6 +84,17 @@ const Home = () => {
           </div>
         </div>
       </div>
+
+      {/* Decorative images moved outside hero-content for better positioning */}
+      <div className="decorative-images">
+        <div className="hero-img left">
+          <img src={mapImage} alt="Global map illustration" />
+        </div>
+        <div className="hero-img right">
+          <img src={planeImg} alt="Paper plane illustration" />
+        </div>
+      </div>
+
       {isLoggedIn && <Sidebar />}
       {showLogin && <Login />}
     </main>

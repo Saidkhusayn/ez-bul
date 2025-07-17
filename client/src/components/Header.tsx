@@ -1,17 +1,18 @@
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useUI } from "../contexts/UIContext";
 import { useNavigate } from "react-router-dom";
 import { useDisclosure } from "../utilities/useDisclosure";
 import DismissableOverlay from '../sub-components/DismissableOverlay';
 import SearchInput from "../sub-components/SearchInput";
-import { MessageCircleMore, CircleUserRound } from 'lucide-react';
-import { SearchResult } from "../sub-components/SearchInput"
-
+import { MessageCircleMore, CircleUserRound, X } from 'lucide-react';
+import { SearchResult } from "../sub-components/SearchInput";
 
 const Header = () => {
   const { isLoggedIn, userName, logout } = useAuth();
   const { setShowLogin, toggleSidebar } = useUI();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Profile dropdown handling
   const profileDisclosure = useDisclosure();
@@ -25,14 +26,28 @@ const Header = () => {
       username: user.username
     }));
 
-    const handleSearchSelect = (result: SearchResult) => {
-      navigate(`/profile/${result.username}`); 
-    };
+  const handleSearchSelect = (result: SearchResult) => {
+    navigate(`/profile/${result.username}`);
+    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <header className="site-header">
       <div className="header-container">
-        <div className="logo">
+        <div className="logo" onClick={() => navigate("/")}>
           <span className="logo-text">ez bu!</span>
         </div>
 
@@ -44,7 +59,7 @@ const Header = () => {
         </div>
 
         <div className="header-right">
-          <div className="search-form" >
+          <div className="search-form">
             <SearchInput
               endpoint="/search"
               placeholder="Search users..."
@@ -63,24 +78,19 @@ const Header = () => {
             ) : (
               <>
                 <div className="chat-icon">
-                  <button className="icon-btn">
-                    < MessageCircleMore 
-                      strokeWidth={1.7}
-                      onClick={toggleSidebar}
-                    />
+                  <button className="icon-btn" onClick={toggleSidebar}>
+                    <MessageCircleMore strokeWidth={1.7} />
                   </button>
                 </div>
 
-                  <button
+                <button
                   className="profile-btn"
                   ref={profileDisclosure.triggerRef}
                   onClick={profileDisclosure.onToggle}
                   aria-expanded={profileDisclosure.isOpen}
                 >
-                  <CircleUserRound strokeWidth={1.7}/>
-                  <span className="profile-name">
-                    {userName}
-                  </span>
+                  <CircleUserRound strokeWidth={1.7} />
+                  <span className="profile-name">{userName}</span>
                 </button>
               </>
             )}
@@ -113,10 +123,50 @@ const Header = () => {
                 </li>
               </ul>
             </DismissableOverlay>
-          </div> 
+          </div>
 
+          {/* Mobile menu toggle */}
+          <button 
+            className={`mobile-menu-toggle ${isMobileMenuOpen ? 'active' : ''}`}
+            onClick={toggleMobileMenu}
+            aria-label="Toggle menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </div>
       </div>
+
+      {/* Mobile navigation overlay */}
+      <div 
+        className={`mobile-nav-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+        onClick={closeMobileMenu}
+      />
+
+      {/* Mobile navigation */}
+      <nav className={`mobile-nav ${isMobileMenuOpen ? 'active' : ''}`}>
+        <div className="mobile-nav-header">
+          <div className="mobile-nav-title">Menu</div>
+          <button className="mobile-nav-close" onClick={closeMobileMenu}>
+            <X strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <div className="mobile-nav-content">
+
+        {/* Navigation links */}
+        <ul className="mobile-nav-list">
+          <li className="mobile-nav-item" onClick={() => handleNavigation("/")}>
+            Home
+          </li>
+          <li className="mobile-nav-item" onClick={() => handleNavigation("/host-listing")}>
+            Hosts
+          </li>
+        </ul>
+
+        </div>
+      </nav>
     </header>
   );
 };

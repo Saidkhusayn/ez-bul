@@ -114,16 +114,19 @@ const viewUser = async (req, res) => {
   
       // STEP 2: Sort by score descending
       const sorted = locationsWithScore.sort((a, b) => b.score - a.score);
+
+      //console.log(sorted);
   
       // STEP 3: Dedupe and take top 7 BEFORE calling hierarchy endpoint
       const topUnique = sorted
         .filter((loc, i, arr) => arr.findIndex(x => x.name === loc.name) === i)
-        .slice(0, 5);
+        .slice(0, 7);
+
+      console.log(topUnique);
   
-      // STEP 4: Format labels (only up to 7 calls to getAdmin1Id)
+      // STEP 4: Format labels 
       const mappedWithLabels = await Promise.all(
         topUnique.map(async location => {
-          // formatLabel inlined for clarity
           const isCountry      = location.fcode === 'PCLI';
           const isProvince     = location.fcode.startsWith('ADM1');
           const isCityOrOther  = location.fcode.startsWith('PPL') || location.fcl === "P";
@@ -140,7 +143,7 @@ const viewUser = async (req, res) => {
             partsFull.push({ value: location.adminId1, label: location.adminName1 });
 
           } else if (isProvince) {
-            partsFull.push({ value: location.geonameId, label: location.name });
+            //partsFull.push({ value: location.geonameId, label: location.name });
           }
   
           if (!partsFull.some(p => p.label === location.countryName)) {
@@ -174,7 +177,7 @@ const viewUser = async (req, res) => {
     try {
       // 1. Destructure everything out, including manual-search flags
       const { country, province, city, languages, type, isManualSearch, value, label } = req.body;
-      const { page = 1, limit = 10 } = req.body; // default page 1 and limit 10
+      const { page = 1, limit = 10 } = req.body;
       
       // Base filter: only hosts who are open
       const baseFilter = { open: 'Yes' };
@@ -185,8 +188,8 @@ const viewUser = async (req, res) => {
         
         if (!searchText) return res.json({ hosts: [], totalCount: 0 });
         
-        // Build an exact‐match, case‐insensitive regex
-        const regex = new RegExp(`^${searchText}$`, 'i');
+        // Build a flexible, partial match regex (case-insensitive)
+        const regex = new RegExp(searchText, 'i');
         
         // Fallback query: match any of the human‐readable labels
         const manualQuery = {

@@ -1,12 +1,21 @@
 .login-overlay {
-    @include flex-center;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 5;
+  overflow-y: auto; // Add this
+  display: flex;
+  align-items: flex-start; // Change from center to flex-start
+  justify-content: center;
+  padding: 20px 0; // Add some padding for mobile
   
-    .login-modal {
-      @include card($spacer * 1.5);
-      width: 400px;
+  .login-modal {
+    @include card($spacer * 1.5);
+    width: 400px;
+    max-width: 90vw; // Ensure it doesn't exceed viewport width
+    margin: auto 0; // Center vertically when there's space
+    //min-height: min-content; // Ensure it takes only needed height
+
 
       .login-header{
         display: flex;

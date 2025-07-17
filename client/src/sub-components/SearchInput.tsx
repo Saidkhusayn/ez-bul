@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 export interface SearchResult {
   id: number;
-  label: string, 
+  label: string,
   type: string;
   country?: { value: string; label: string };
   province?: { value: string; label: string };
@@ -33,7 +33,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   searchType,
 }) => {
 
-  // Search states 
+  // Search states
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [history, setHistory] = useState<SearchResult[]>([]);
@@ -44,26 +44,29 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const disclosure = useDisclosure();
   const navigate = useNavigate();
 
-  
-  // Search history management
+  // ----------------------
+  // Search history management (sessionStorage)
+  // ----------------------
   useEffect(() => {
-    const savedHistory = localStorage.getItem(historyKey);
+    // Load history from sessionStorage instead of localStorage
+    const savedHistory = sessionStorage.getItem(historyKey);
     setHistory(savedHistory ? JSON.parse(savedHistory) : []);
   }, [historyKey]);
 
   useEffect(() => {
     if (history.length > 0) {
-      localStorage.setItem(historyKey, JSON.stringify(history));
+      // Persist history in sessionStorage
+      sessionStorage.setItem(historyKey, JSON.stringify(history));
     }
   }, [history, historyKey]);
 
-
+  // ----------------------
   // Search functionality
+  // ----------------------
   useEffect(() => {
     const fetchResults = async () => {
       if (debouncedQuery.length < 2) {
-        setResults([]);
-        disclosure.onClose();
+        disclosure.onClose(); // close dropdown if too short
         return;
       }
 
@@ -72,12 +75,12 @@ const SearchInput: React.FC<SearchInputProps> = ({
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}${endpoint}?query=${encodeURIComponent(debouncedQuery)}`
         );
-        
+
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Search failed');
-        console.log(data)
+
         setResults(transformData(data));
-        disclosure.onOpen();
+        disclosure.onOpen(); // open dropdown when results present
       } catch (error) {
         console.error('Backend responded with error:', error);
         disclosure.onClose();
@@ -86,60 +89,57 @@ const SearchInput: React.FC<SearchInputProps> = ({
       }
     };
 
-    fetchResults();
+    if (debouncedQuery.trimStart() && debouncedQuery.length > 2) {
+      fetchResults();
+    }
   }, [debouncedQuery]);
 
-
   const handleSearch = useCallback(() => {
-    if (query.length >= 2) {
-      const encodedQuery = encodeURIComponent(query);
+    const cleanQuery = query.trim();
+    if (cleanQuery.length >= 2) {
+      const encodedQuery = encodeURIComponent(cleanQuery);
       const searchPath = `/host-listing`;
-      
+
       // Create history item for manual search
       const newHistoryItem: SearchResult = {
-        id: Date.now(), 
+        id: Date.now(),
         value: encodedQuery,
-        label: query,
-        type: "other",
+        label: cleanQuery,
+        type: 'other',
         country: undefined,
         province: undefined,
         city: undefined,
-        isManualSearch: true
+        isManualSearch: true,
       };
-      
-      // Update search history
+
+      // Update session-based search history
       setHistory(prev => [
         newHistoryItem,
         ...prev.filter(item => item.value !== encodedQuery)
       ].slice(0, 5));
 
-      navigate(searchPath, { state: {newHistoryItem} });
+      navigate(searchPath, { state: { newHistoryItem } });
       setQuery('');
       disclosure.onClose();
     }
-  }, [query, searchType, navigate, disclosure]);
-
-
-
+  }, [query, navigate, disclosure]);
 
   const handleSelect = (result: SearchResult) => {
     setQuery('');
+    setResults([])
     disclosure.onClose();
 
     setHistory(prev => [
       result,
-      ...prev.filter(item => item.id !== result.id) 
+      ...prev.filter(item => item.id !== result.id)
     ].slice(0, 5));
-    
-    // Navigate to either custom onSelect or default search route
+
     if (onSelect) {
       onSelect(result);
     } else {
       navigate(`/search/${searchType}/${encodeURIComponent(result.value)}`);
     }
   };
-
-
 
   return (
     <div className="search-form">
@@ -155,10 +155,10 @@ const SearchInput: React.FC<SearchInputProps> = ({
           //@ts-ignore
           ref={disclosure.triggerRef}
         />
-        <button 
-          className="search-btn" 
+        <button
+          className="search-btn"
           type="button"
-          onClick={ handleSearch }
+          onClick={handleSearch}
         >
           <Search size={18} />
         </button>
@@ -172,38 +172,42 @@ const SearchInput: React.FC<SearchInputProps> = ({
       >
         <div className="search-results">
           {isLoading && <div className="dropdown-item">Loading...</div>}
-          
+
           {!isLoading && results.length > 0 && (
             <ul className="dropdown-list">
-            {results.map(result => (
-              <li
-                key={result.id}
-                className="dropdown-item"
-                onClick={() => handleSelect(result)}
-              >
-                {result.label}
-              </li>
-            ))}
-          </ul>
+              {results.map(result => (
+                <li
+                  key={result.id}
+                  className="dropdown-item"
+                  onClick={() => handleSelect(result)}
+                >
+                  {result.label}
+                </li>
+              ))}
+            </ul>
           )}
 
           {!isLoading && results.length === 0 && debouncedQuery.length >= 2 && (
             <div className="dropdown-item">No results found</div>
           )}
 
-          {!isLoading && debouncedQuery.length < 2 && history.length > 0 && (
-            <ul className="dropdown-list">
-              {history.map(item => (
-                <li
-                  key={item.id}
-                  className="dropdown-item history-item"
-                  onClick={() => handleSelect(item)}
-                >
-                  <Clock size={14} className="history-icon" />
-                     { item.label}
-                </li>
-              ))}
-            </ul>
+          {!isLoading && debouncedQuery.length < 2 && (
+            history.length > 0 ? (
+              <ul className="dropdown-list">
+                {history.map(item => (
+                  <li
+                    key={item.id}
+                    className="dropdown-item history-item"
+                    onClick={() => handleSelect(item)}
+                  >
+                    <Clock size={14} className="history-icon" />
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="dropdown-item">No recent searches</div>
+            )
           )}
         </div>
       </DismissableOverlay>

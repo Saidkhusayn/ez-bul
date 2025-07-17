@@ -68,7 +68,7 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
       try {
         const countryValue = selectedCountry.value;
         const res = await fetch(
-          `http://api.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
+          `https://secure.geonames.org/childrenJSON?geonameId=${countryValue}&username=${GEONAMES_ID}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -107,7 +107,7 @@ const AdvancedLocationSearch: React.FC<AdvancedLocationSearchProps> = ({
       try {
         const provinceValue = selectedProvince.value;
         const res = await fetch(
-          `http://api.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
+          `https://secure.geonames.org/childrenJSON?geonameId=${provinceValue}&username=${GEONAMES_ID}`
         );
         if (res.ok) {
           const data = await res.json();

@@ -1,19 +1,24 @@
 .main-content {
     background-color: $primary-light;
-    height: 100vh;
+    min-height: 100vh;
     width: 100%;
+    position: relative;
+    overflow: hidden; // Prevent images from causing horizontal scroll
 
-    .hero-section{
+    .hero-section {
         @include flex-center(column);
         max-width: 1200px;
         margin: 0 auto;
         padding: 80px 20px;
+        position: relative;
+        z-index: 2; // Ensure content stays above decorative images
 
-        .hero-content{
+        .hero-content {
             max-width: 800px;
+            position: relative;
 
-            .hero-title{
-                font-size: 70px;
+            .hero-title {
+                font-size: clamp(2.5rem, 5vw, 4.375rem); // Responsive font size
                 font-weight: $font-weight-xbold;
                 margin-bottom: $spacer-lg;
                 line-height: 1.1;
@@ -27,7 +32,7 @@
                 }
             }
 
-            .hero-description{
+            .hero-description {
                 font-size: $font-size-md;
                 font-weight: $font-weight-sm;
                 color: #333;
@@ -36,19 +41,20 @@
                 max-width: 700px;
                 margin-left: auto;
                 margin-right: auto;
+                text-align: center;
             }
 
-            .hero-search{
+            .hero-search {
                 display: flex;
                 justify-content: center;
                 margin-top: 30px;
 
-                .search-form{
+                .search-form {
                     position: relative;
                     width: 100%;
                     max-width: 700px;
 
-                    .search-input{
+                    .search-input {
                         @include input-card(15px 20px, $border-radius-lg);
                         width: 100%;
                         padding-right: 50px;
@@ -56,12 +62,12 @@
                         background-color: $white;
                         transition: all 0.3s;
                         
-                        &:focus{
+                        &:focus {
                             box-shadow: $shadow-lg;
                         }
                     }
 
-                    .search-btn{
+                    .search-btn {
                         @extend %icon-btn-base;
                         position: absolute;
                         right: 20px;
@@ -70,22 +76,157 @@
                         color: $text-light;
                     }
 
-                    .search-dropdown{
+                    .search-dropdown {
                         @extend %dropdown;
-                        min-width: 650px;
+                        width: calc(100% - 6%); // 3% margin on each side
                         left: 3%;
+                        //min-width: 0; // Remove the fixed min-width
                         font-size: 16px;
                         padding: 10px 20px;
 
-                        .history-item{
-                           svg{
-                            margin-right: 8px;
-                           }
+                        // @media (max-width: 768px) {
+                        //     //width: 0%;
+                        //     //left: -10;
+                        //     //right: 0;
+                        //     //min-width: 100%;
+                           
+                        // }
+
+                        .history-item {
+                            svg {
+                                margin-right: 8px;
+                            }
                         }
                     }
                 }
             }
         }
     }
-  }
+
+    // Decorative images container
+    .decorative-images {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+
+        .hero-img {
+            position: absolute;
+            opacity: 0.9;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+
+            img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+
+            &.left {
+                left: 2%;
+                bottom: 10%;
+                width: min(25vw, 400px);
+                min-width: 200px;
+                
+                // Responsive adjustments
+                @media (max-width: 1200px) {
+                    left: 1%;
+                    bottom: 8%;
+                    width: min(28vw, 350px);
+                }
+                
+                @media (max-width: 768px) {
+                    left: -5%;
+                    bottom: 5%;
+                    width: min(35vw, 250px);
+                    opacity: 0.7;
+                }
+                
+                @media (max-width: 480px) {
+                    left: -10%;
+                    bottom: 3%;
+                    width: min(40vw, 200px);
+                    opacity: 0.6;
+                }
+            }
+
+            &.right {
+                right: 2%;
+                top: 15%;
+                width: min(22vw, 350px);
+                min-width: 180px;
+                
+                // Responsive adjustments
+                @media (max-width: 1200px) {
+                    right: 1%;
+                    top: 12%;
+                    width: min(25vw, 300px);
+                }
+                
+                @media (max-width: 768px) {
+                    right: -5%;
+                    top: 10%;
+                    width: min(30vw, 220px);
+                    opacity: 0.7;
+                }
+                
+                @media (max-width: 480px) {
+                    right: -10%;
+                    top: 8%;
+                    width: min(35vw, 180px);
+                    opacity: 0.6;
+                }
+            }
+        }
+    }
+
+    // Optional: Add subtle animations
+    .hero-img {
+        animation: float 6s ease-in-out infinite;
+        
+        &.right {
+            animation-delay: -3s;
+        }
+    }
+}
+
+// Floating animation for decorative images
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+// Additional responsive adjustments for the main content
+@media (max-width: 768px) {
+    .main-content {
+        .hero-section {
+            padding: 60px 15px;
+            
+            .hero-content {
+                .hero-description {
+                    font-size: 0.9rem;
+                    margin-bottom: 30px;
+                }
+                
+                .hero-search {
+                    margin-top: 20px;
+                    
+                    .search-form {
+                        .search-dropdown {
+                            min-width: 90vw;
+                            left: 5%;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
   
