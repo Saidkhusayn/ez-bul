@@ -64,13 +64,12 @@ const Home = () => {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            <span className="title-highlight">Payroll</span>
+            <span className="title-highlight">Find people</span>
             <br />
-            for global teams
+            who’ve been where you want to go
           </h1>
           <p className="hero-description">
-            Deel helps tens of thousands of companies expand globally with unmatched speed,
-            flexibility and compliance.
+          Ez Bul helps people connect with locals and expats in any city or country for advice, guidance, and personal help.
           </p>
           <div className="hero-search">
             <SearchInput

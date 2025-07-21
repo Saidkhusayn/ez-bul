@@ -54,7 +54,7 @@ const Header = () => {
         <div className="nav-menu">
           <ul className="nav-list">
             <li className="nav-item" onClick={() => navigate("/")}>Home</li>
-            <li className="nav-item" onClick={() => navigate("/host-listing")}>Hosts</li>
+            <li className="nav-item" onClick={() => navigate("/host-listing")}>Locals</li>
           </ul>
         </div>
 
@@ -161,7 +161,7 @@ const Header = () => {
             Home
           </li>
           <li className="mobile-nav-item" onClick={() => handleNavigation("/host-listing")}>
-            Hosts
+            Locals
           </li>
         </ul>
 
