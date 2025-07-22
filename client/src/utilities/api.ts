@@ -30,7 +30,7 @@ export const fetchWithAuth = async (url: string, options: FetchOptions = {}): Pr
       headers: baseHeaders,
     });
 
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) { //from the server i am giving 403 for token expired instead of 401
       const refreshResponse = await fetch(`${API_URL}/refresh`, {
         method: "POST",
         credentials: "include",

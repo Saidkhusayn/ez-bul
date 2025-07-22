@@ -23,7 +23,8 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
       </div>
       <div className="host-info">
         <h3 className="host-name">{host.name}</h3>
-        <span className="response-time">{host.type === "Paid" ? ("$" + host.rate + " p/h") : (host.type) }</span>
+        <span className="response-time">@{host.username}</span>
+        <span className="response-time">{host.type === "Paid" ? ("$" + host.rate + "/hr") : (host.type) }</span>
       </div>
     </div>
     

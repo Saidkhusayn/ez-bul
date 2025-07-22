@@ -438,6 +438,12 @@ const ProfileEdit: React.FC = () => {
             ) : (
             <div className="avatar-placeholder">
               {(profile.name || profile.username).charAt(0).toUpperCase()}
+              <div 
+                className="overlay"
+                onClick={handlePictureClick}
+                >
+                  <i className="icon">< Camera /></i>
+              </div>
             </div>
             )}
           </div>

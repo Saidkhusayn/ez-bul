@@ -3,10 +3,10 @@
     background-color: $white;
     position: fixed;
     bottom: $spacer * 2.1875; // 35px
-    left: $spacer-xs;
+    right: $spacer-xs;
     width: 440px;
     height: 85vh;
-    transform: translateX(-450px);
+    transform: translateX(450px);
     transition: transform 0.3s ease-in-out;
     z-index: 3;
   

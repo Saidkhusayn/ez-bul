@@ -5,7 +5,8 @@ import Select from 'react-select';
 import languages from "../assets/languages.json";
 import { Host, Filter, LocationOption } from '../utilities/props';
 import HostCard from '../sub-components/HostCard';
-import { ArrowBigLeftDash, ArrowBigRightDash } from 'lucide-react'
+import Sidebar from '../components/Sidebar';
+import { ArrowBigLeftDash, ArrowBigRightDash, ListFilter as FilterIcon, X } from 'lucide-react'
 
 const languageOptions = languages.map((lang) => ({
   value: lang.code,
@@ -30,6 +31,10 @@ const HostListing: React.FC = () => {
   const [hostType, setHostType] = useState<'Volunteer' | 'Paid' | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedLanguages, setSelectedLanguages] = useState<LocationOption[]>([]);
+  
+  // Sidebar visibility state
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [filteredHosts, setFilteredHosts] = useState<Host[]>([]);
@@ -52,6 +57,27 @@ const HostListing: React.FC = () => {
     languages: [], 
     type: undefined 
   });
+
+  // Handle window resize to detect mobile/desktop
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // Hide sidebar on mobile by default, show on desktop
+      if (mobile) {
+        setSidebarVisible(false);
+      } else {
+        setSidebarVisible(true);
+      }
+    };
+
+    // Initial check
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Parse query params from URL on component mount
   useEffect(() => {
@@ -201,6 +227,11 @@ const HostListing: React.FC = () => {
     
     // Fetch hosts with new filters
     fetchHosts(newFilters, 1);
+
+    // Hide sidebar on mobile after applying filters
+    if (isMobile) {
+      setSidebarVisible(false);
+    }
   };
 
   const clearFilters = () => {
@@ -225,6 +256,11 @@ const HostListing: React.FC = () => {
 
     setActiveFilters(emptyFilters);
     fetchHosts(emptyFilters, 1);
+  };
+
+  // Toggle sidebar visibility
+  const toggleSidebar = () => {
+    setSidebarVisible(!sidebarVisible);
   };
 
   // Generate a summary of active filters for display
@@ -263,10 +299,31 @@ const HostListing: React.FC = () => {
 
   return (
     <div className="listing-container">
+      {/* Mobile Filter Toggle Button */}
+      {isMobile && (
+        <button 
+          className="mobile-filter-toggle"
+          onClick={toggleSidebar}
+        >
+          <FilterIcon size={20} />
+          Filters
+        </button>
+      )}
+
       {/* Filters Sidebar */}
-      <div className="filters-sidebar">
+      <div className={`filters-sidebar ${sidebarVisible ? 'visible' : 'hidden'}`}>
         <div className="filter-section">
-          <h3 className="filter-title">Filters</h3>
+          <div className="filter-header-row">
+            <h3 className="filter-title">Filters</h3>
+            {isMobile && (
+              <button 
+                className="close-sidebar-btn"
+                onClick={toggleSidebar}
+              >
+                <X size={20} />
+              </button>
+            )}
+          </div>
 
           <div className="filter-group">
             <div className="filter-header">
@@ -345,14 +402,33 @@ const HostListing: React.FC = () => {
         </div>
       </div>
 
+      {/* Sidebar Overlay for mobile */}
+      {isMobile && sidebarVisible && (
+        <div 
+          className="sidebar-overlay"
+          onClick={toggleSidebar}
+        />
+      )}
+
       {/* Main Listing */}
       <div className="hosts-list">
         <div className="results-header">
-          <h2 className="results-count">
-            {isLoading 
-              ? 'Loading hosts...' 
-              : `${totalHostsCount} ${totalHostsCount === 1 ? 'result' : 'results'} ${getFilterSummary() ? `(${getFilterSummary()})` : ''}`}
-          </h2>
+          <div className="results-info">
+            {!isMobile && (
+              <button 
+                className="desktop-filter-toggle"
+                onClick={toggleSidebar}
+                title={sidebarVisible ? "Hide Filters" : "Show Filters"}
+              >
+                <FilterIcon size={18} />
+              </button>
+            )}
+            <h2 className="results-count">
+              {isLoading 
+                ? 'Loading hosts...' 
+                : `${totalHostsCount} ${totalHostsCount === 1 ? 'result' : 'results'} ${getFilterSummary() ? `(${getFilterSummary()})` : ''}`}
+            </h2>
+          </div>
           <button 
             className="clear-filters-btn primary-button" 
             onClick={clearFilters}
@@ -404,6 +480,7 @@ const HostListing: React.FC = () => {
           </div>
         )}
       </div>
+      <Sidebar />
     </div>
   );
 };
