@@ -375,6 +375,7 @@
     align-items: center;
     gap: $spacer-sm;
     margin-bottom: $spacer;
+    cursor: pointer;
 
     .host-avatar {
       @include chat-avatar(56px, 56px);

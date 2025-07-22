@@ -1,14 +1,23 @@
 // HostCard.tsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Host } from '../utilities/props';
 
 interface HostCardProps {
   host: Host;
 }
 
-const HostCard: React.FC<HostCardProps> = ({ host }) => (
+const HostCard: React.FC<HostCardProps> = ({ host }) => {
+  const navigate = useNavigate();
+
+  const handleHostClick = () => {
+    navigate(`/profile/${host.username}`);
+  };
+  
+  
+  return (
   <div className="host-card">
-    <div className="host-header">
+    <div className="host-header" onClick={handleHostClick}>
       <div className="host-avatar">      
         {host.profilePicture ? (     
             <img 
@@ -56,6 +65,7 @@ const HostCard: React.FC<HostCardProps> = ({ host }) => (
       <button className="status-badge accepting">Accepting Guests</button>
     )}
   </div>
-);
+)
+};
 
 export default HostCard;
